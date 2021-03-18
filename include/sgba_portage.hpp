@@ -17,7 +17,8 @@ void system_wait_start(void);
 void ticks_delay(uint32_t nTicksToDelay);
 uint32_t ms_to_ticks(uint16_t ms);
 void commander_set_setpoint(setpoint_t *setpoint, int priority);
-void estimator_kalman_get_estimated_pos(point_t* pos);
+void estimator_kalman_get_estimated_pos(point_t *pos);
+bool radiolinkSendP2PPacketBroadcast(P2PPacket *p2pp);
 
 uint8_t get_deck_bc_multiranger();
 uint8_t get_deck_bc_flow2();

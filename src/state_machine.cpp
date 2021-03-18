@@ -283,7 +283,7 @@ void sgba_fsm_loop_iteration(void *param) {
           priority = false;
         }
         // TODO make outbound depended on battery.
-        state = SGBA_controller(
+        state = sgba_controller(
             &vel_x_cmd, &vel_y_cmd, &vel_w_cmd, &rssi_angle, &state_wf,
             front_range, left_range, right_range, back_range, heading_rad,
             (float)pos.x, (float)pos.y, rssi_beacon_filtered,
@@ -323,15 +323,15 @@ void sgba_fsm_loop_iteration(void *param) {
 #endif
 #if METHOD == 3 // Swarm Gradient Bug Algorithm
             if (my_id == 4 || my_id == 8) {
-              init_SGBA_controller(0.4, 0.5, -0.8);
+              init_sgba_controller(0.4, 0.5, -0.8);
             } else if (my_id == 2 || my_id == 6) {
-              init_SGBA_controller(0.4, 0.5, 0.8);
+              init_sgba_controller(0.4, 0.5, 0.8);
             } else if (my_id == 3 || my_id == 7) {
-              init_SGBA_controller(0.4, 0.5, -2.4);
+              init_sgba_controller(0.4, 0.5, -2.4);
             } else if (my_id == 5 || my_id == 9) {
-              init_SGBA_controller(0.4, 0.5, 2.4);
+              init_sgba_controller(0.4, 0.5, 2.4);
             } else {
-              init_SGBA_controller(0.4, 0.5, 0.8);
+              init_sgba_controller(0.4, 0.5, 0.8);
             }
 
 #endif
@@ -370,9 +370,9 @@ void sgba_fsm_loop_iteration(void *param) {
     }
 
 #if METHOD != 1
-    if (usecTimestamp() >= radioSendBroadcastTime + 1000 * 500) {
-      radiolinkSendP2PPacketBroadcast(&p_reply);
-      radioSendBroadcastTime = usecTimestamp();
+    if (sgba::us_timestamp() >= radioSendBroadcastTime + 1000 * 500) {
+      sgba::radiolinkSendP2PPacketBroadcast(&p_reply);
+      radioSendBroadcastTime = sgba::us_timestamp();
     }
 
 #endif
