@@ -79,7 +79,7 @@ static int32_t find_minimum(uint8_t a[], int32_t n) {
   return index;
 }
 
-void sgba::wall_following_controller::sgba_fsm_loop_iteration(void *param) {
+void sgba::wall_following_controller::fsm_loop_iteration() {
   static struct MedianFilterFloat medFilt;
   init_median_filter_f(&medFilt, 5);
   static struct MedianFilterFloat medFilt_2;

@@ -10,7 +10,7 @@ namespace sgba {
 
 class wall_following_controller {
 public:
-  void sgba_fsm_loop_iteration(void *param);
+  void fsm_loop_iteration();
   void p2pCallbackHandler(P2PPacket *p);
 
 private:
