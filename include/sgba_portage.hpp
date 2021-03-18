@@ -1,9 +1,9 @@
-#ifndef __SGBA_PORTAGE__
-#define __SGBA_PORTAGE__
+#ifndef __SGBA_PORTAGE__HPP__
+#define __SGBA_PORTAGE__HPP__
 
-#include <cstdint>
-#include "stabilizer_types.hpp"
 #include "p2p.hpp"
+#include "stabilizer_types.hpp"
+#include <cstdint>
 
 namespace sgba {
 
@@ -28,17 +28,15 @@ uint8_t get_radio_rssi();
 
 float get_front_range(); // Between 0 and 1
 float get_right_range(); // Between 0 and 1
-float get_left_range(); // Between 0 and 1
-float get_back_range(); // Between 0 and 1
-float get_up_range(); // Between 0 and 1
+float get_left_range();  // Between 0 and 1
+float get_back_range();  // Between 0 and 1
+float get_up_range();    // Between 0 and 1
 
-
-#ifndef TICKS_PER_FSM_LOOP 
+#ifndef TICKS_PER_FSM_LOOP
 #warning Macro "TICKS_PER_FSM_LOOP" is required. Set to default value 10
 #define TICKS_PER_FSM_LOOP 10
 #endif
 
-
 } // namespace sgba
 
-#endif /* __SGBA_PORTAGE__ */
+#endif /* __SGBA_PORTAGE__HPP__ */

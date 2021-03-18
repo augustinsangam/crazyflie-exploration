@@ -1,48 +1,39 @@
 #include <math.h>
 
 #include "sgba_portage.hpp"
-#include "wallfollowing_multiranger_onboard.hpp"
 #include "wallfollowing_with_avoid.hpp"
 
-float state_start_time;
-
-// static variables only used for initialization
-static bool first_run = true;
-static float ref_distance_from_wall = 0.5;
-static float max_speed = 0.5;
-static float local_direction = 1;
-
-static int transition(int new_state) {
-  float t = sgba::usecTimestamp() / 1e6;
-  state_start_time = t;
+int sgba::WallFollowingWithAvoid::transition(int new_state) {
+  float t = sgba::us_timestamp() / 1e6;
+  state_start_time_ = t;
   return new_state;
 }
 
 // statemachine functions
-void init_wall_follower_and_avoid_controller(float new_ref_distance_from_wall,
-                                             float max_speed_ref,
-                                             float starting_local_direction) {
+void sgba::WallFollowingWithAvoid::init_wall_follower_and_avoid_controller(
+    float new_ref_distance_from_wall, float max_speed_ref,
+    float starting_local_direction) {
   ref_distance_from_wall = new_ref_distance_from_wall;
-  max_speed = max_speed_ref;
-  local_direction = starting_local_direction;
-  first_run = true;
+  max_speed_ = max_speed_ref;
+  local_direction_ = starting_local_direction;
+  first_run_ = true;
 }
 
-int wall_follower_and_avoid_controller(float *vel_x, float *vel_y, float *vel_w,
-                                       float front_range, float left_range,
-                                       float right_range, float current_heading,
-                                       uint8_t rssi_other_drone) {
+int sgba::WallFollowingWithAvoid::wall_follower_and_avoid_controller(
+    float *vel_x, float *vel_y, float *vel_w, float front_range,
+    float left_range, float right_range, float current_heading,
+    uint8_t rssi_other_drone) {
 
   // Initalize static variables
   static int state = 1;
   static int rssi_collision_threshold = 43;
 
   // if it is reinitialized
-  if (first_run) {
+  if (first_run_) {
     state = 1;
-    float t = sgba::usecTimestamp() / 1e6;
-    state_start_time = t;
-    first_run = false;
+    float t = sgba::us_timestamp() / 1e6;
+    state_start_time_ = t;
+    first_run_ = false;
   }
 
   /***********************************************************
@@ -59,7 +50,7 @@ int wall_follower_and_avoid_controller(float *vel_x, float *vel_y, float *vel_w,
   if (state == 1) { // FORWARD
     // if front range is close, start wallfollowing
     if (front_range < ref_distance_from_wall + 0.2f) {
-      wall_follower_init(ref_distance_from_wall, 0.5, 3);
+      wallFollowing_.wall_follower_init(ref_distance_from_wall, 0.5, 3);
       state = transition(2); // wall_following
     }
   } else if (state == 2) { // WALL_FOLLOWING
@@ -86,12 +77,14 @@ int wall_follower_and_avoid_controller(float *vel_x, float *vel_y, float *vel_w,
 
   } else if (state == 2) { // WALL_FOLLOWING
     // Get the values from the wallfollowing
-    if (local_direction == 1) {
-      wall_follower(&temp_vel_x, &temp_vel_y, &temp_vel_w, front_range,
-                    right_range, current_heading, local_direction);
-    } else if (local_direction == -1) {
-      wall_follower(&temp_vel_x, &temp_vel_y, &temp_vel_w, front_range,
-                    left_range, current_heading, local_direction);
+    if (local_direction_ == 1) {
+      wallFollowing_.wall_follower(&temp_vel_x, &temp_vel_y, &temp_vel_w,
+                                   front_range, right_range, current_heading,
+                                   local_direction_);
+    } else if (local_direction_ == -1) {
+      wallFollowing_.wall_follower(&temp_vel_x, &temp_vel_y, &temp_vel_w,
+                                   front_range, left_range, current_heading,
+                                   local_direction_);
     }
   } else if (state == 3) { // MOVE_OUT_OF_WAY
 

@@ -3,77 +3,14 @@
 #include <cstring>
 
 #include "median_filter.hpp"
-#include "p2p.hpp"
-#include "sgba.hpp"
 #include "sgba_portage.hpp"
-#include "stabilizer_types.hpp"
-#include "wallfollowing_multiranger_onboard.hpp"
-#include "wallfollowing_with_avoid.hpp"
+#include "state_machine.hpp"
 
 #define STATE_MACHINE_COMMANDER_PRI 3
 
-static bool keep_flying = false;
-
-float height;
-
-static bool taken_off = false;
-static float nominal_height = 0.3;
-
-/*
-  Switch to multiple methods, that increases in complexity
-  * 1 = wall_following: Go forward and follow walls with the multiranger
-  * 2 = wall following with avoid: This also follows walls but will move away if
-  another Crazyflie with an lower ID is coming close 
-  * 3 = SGBA: The SGBA method
-  that incorporates the above methods. 
-
-  NOTE: the switching between outbound and
-  inbound has not been implemented yet
-*/
-#define METHOD 1
-
-void p2pCallbackHandler(sgba::P2PPacket *p);
-static uint8_t rssi_inter;
-static uint8_t rssi_inter_filtered;
-static uint8_t rssi_inter_closest;
-
-float rssi_angle_inter_ext;
-float rssi_angle_inter_closest;
-static uint8_t rssi_beacon;
-static uint8_t rssi_beacon_filtered;
-
-static uint8_t id_inter_ext;
-static sgba::setpoint_t setpoint_BG;
-static float vel_x_cmd, vel_y_cmd, vel_w_cmd;
-static float heading_rad;
-static float right_range;
-static float front_range;
-static float left_range;
-static float up_range;
-static float back_range;
-static float rssi_angle;
-static int state;
-
-#if METHOD == 3
-static int state_wf;
-#endif
-
-static float up_range_filtered;
-static int varid;
-// static bool manual_startup = false;
-static bool on_the_ground = true;
-// static uint32_t time_stamp_manual_startup_command = 0;
-static bool correctly_initialized;
-static uint8_t rssi_array_other_drones[9] = {150, 150, 150, 150, 150,
-                                             150, 150, 150, 150};
-static uint64_t time_array_other_drones[9] = {0};
-static float rssi_angle_array_other_drones[9] = {500.0f};
-static uint8_t id_inter_closest = 100;
-
 #define MANUAL_STARTUP_TIMEOUT M2T(3000)
 
-static void take_off(sgba::setpoint_t *sp, float velocity)
-{
+static void take_off(sgba::setpoint_t *sp, float velocity) {
   sp->mode.x = sgba::modeVelocity;
   sp->mode.y = sgba::modeVelocity;
   sp->mode.z = sgba::modeVelocity;
@@ -84,21 +21,18 @@ static void take_off(sgba::setpoint_t *sp, float velocity)
   sp->attitudeRate.yaw = 0.0;
 }
 
-static void land(sgba::setpoint_t *sp, float velocity)
-{
+static void land(sgba::setpoint_t *sp, float velocity) {
   sp->mode.x = sgba::modeVelocity;
   sp->mode.y = sgba::modeVelocity;
   sp->mode.z = sgba::modeVelocity;
   sp->velocity.x = 0.0;
   sp->velocity.y = 0.0;
-  sp->velocity.z = - velocity;
+  sp->velocity.z = -velocity;
   sp->mode.yaw = sgba::modeVelocity;
   sp->attitudeRate.yaw = 0.0;
 }
 
-
-static void hover(sgba::setpoint_t *sp, float height)
-{
+static void hover(sgba::setpoint_t *sp, float height) {
   sp->mode.x = sgba::modeVelocity;
   sp->mode.y = sgba::modeVelocity;
   sp->mode.z = sgba::modeAbs;
@@ -109,8 +43,8 @@ static void hover(sgba::setpoint_t *sp, float height)
   sp->attitudeRate.yaw = 0.0;
 }
 
-static void vel_command(sgba::setpoint_t *sp, float vel_x, float vel_y, float yaw_rate, float height)
-{
+static void vel_command(sgba::setpoint_t *sp, float vel_x, float vel_y,
+                        float yaw_rate, float height) {
   sp->mode.x = sgba::modeVelocity;
   sp->mode.y = sgba::modeVelocity;
   sp->mode.z = sgba::modeAbs;
@@ -122,8 +56,7 @@ static void vel_command(sgba::setpoint_t *sp, float vel_x, float vel_y, float ya
   sp->velocity_body = true;
 }
 
-static void shut_off_engines(sgba::setpoint_t *sp)
-{
+static void shut_off_engines(sgba::setpoint_t *sp) {
   sp->mode.x = sgba::modeDisable;
   sp->mode.y = sgba::modeDisable;
   sp->mode.z = sgba::modeDisable;
@@ -146,14 +79,14 @@ static int32_t find_minimum(uint8_t a[], int32_t n) {
   return index;
 }
 
-void sgba_fsm_loop_iteration(void *param) {
+void sgba::wall_following_controller::sgba_fsm_loop_iteration(void *param) {
   static struct MedianFilterFloat medFilt;
   init_median_filter_f(&medFilt, 5);
   static struct MedianFilterFloat medFilt_2;
   init_median_filter_f(&medFilt_2, 5);
   static struct MedianFilterFloat medFilt_3;
   init_median_filter_f(&medFilt_3, 13);
-  sgba::p2p_register_cb(p2pCallbackHandler);
+  // p2p_register_cb(p2pCallbackHandler);
   uint64_t address = sgba::config_block_get_radio_address();
   uint8_t my_id = (uint8_t)((address)&0x00000000ff);
   static sgba::P2PPacket p_reply;
@@ -262,15 +195,16 @@ void sgba_fsm_loop_iteration(void *param) {
 
 #if METHOD == 1 // WALL_FOLLOWING
                 // wall following state machine
-        state = wall_follower(&vel_x_cmd, &vel_y_cmd, &vel_w_cmd, front_range,
-                              right_range, heading_rad, 1);
+        state = exploration_controller_.wall_follower(
+            &vel_x_cmd, &vel_y_cmd, &vel_w_cmd, front_range, right_range,
+            heading_rad, 1);
 #endif
 #if METHOD == 2 // WALL_FOLLOWER_AND_AVOID
         if (id_inter_closest > my_id) {
           rssi_inter_filtered = 140;
         }
 
-        state = wall_follower_and_avoid_controller(
+        state = exploration_controller_.wall_follower_and_avoid_controller(
             &vel_x_cmd, &vel_y_cmd, &vel_w_cmd, front_range, left_range,
             right_range, heading_rad, rssi_inter_filtered);
 #endif
@@ -283,7 +217,7 @@ void sgba_fsm_loop_iteration(void *param) {
           priority = false;
         }
         // TODO make outbound depended on battery.
-        state = sgba_controller(
+        state = exploration_controller_.sgba_controller(
             &vel_x_cmd, &vel_y_cmd, &vel_w_cmd, &rssi_angle, &state_wf,
             front_range, left_range, right_range, back_range, heading_rad,
             (float)pos.x, (float)pos.y, rssi_beacon_filtered,
@@ -312,26 +246,28 @@ void sgba_fsm_loop_iteration(void *param) {
             taken_off = true;
 
 #if METHOD == 1 // wall following
-            wall_follower_init(0.4, 0.5, 1);
+            exploration_controller_.wall_follower_init(0.4, 0.5, 1);
 #endif
 #if METHOD == 2 // wallfollowing with avoid
             if (my_id % 2 == 1)
-              init_wall_follower_and_avoid_controller(0.4, 0.5, -1);
+              exploration_controller_.init_wall_follower_and_avoid_controller(
+                  0.4, 0.5, -1);
             else
-              init_wall_follower_and_avoid_controller(0.4, 0.5, 1);
+              exploration_controller_.init_wall_follower_and_avoid_controller(
+                  0.4, 0.5, 1);
 
 #endif
 #if METHOD == 3 // Swarm Gradient Bug Algorithm
             if (my_id == 4 || my_id == 8) {
-              init_sgba_controller(0.4, 0.5, -0.8);
+              exploration_controller_.init_sgba_controller(0.4, 0.5, -0.8);
             } else if (my_id == 2 || my_id == 6) {
-              init_sgba_controller(0.4, 0.5, 0.8);
+              exploration_controller_.init_sgba_controller(0.4, 0.5, 0.8);
             } else if (my_id == 3 || my_id == 7) {
-              init_sgba_controller(0.4, 0.5, -2.4);
+              exploration_controller_.init_sgba_controller(0.4, 0.5, -2.4);
             } else if (my_id == 5 || my_id == 9) {
-              init_sgba_controller(0.4, 0.5, 2.4);
+              exploration_controller_.init_sgba_controller(0.4, 0.5, 2.4);
             } else {
-              init_sgba_controller(0.4, 0.5, 0.8);
+              exploration_controller_.init_sgba_controller(0.4, 0.5, 0.8);
             }
 
 #endif
@@ -380,7 +316,7 @@ void sgba_fsm_loop_iteration(void *param) {
   }
 }
 
-void p2pcallbackHandler(sgba::P2PPacket *p) {
+void sgba::wall_following_controller::p2pCallbackHandler(P2PPacket *p) {
   id_inter_ext = p->data[0];
 
   if (id_inter_ext == 0x63) {
