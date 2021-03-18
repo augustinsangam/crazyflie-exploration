@@ -1,5 +1,5 @@
-#ifndef __MEDIAN_HPP__
-#define __MEDIAN_HPP__
+#ifndef MEDIAN_HPP
+#define MEDIAN_HPP
 
 #include <cstdint>
 #include <cstring>
@@ -139,4 +139,4 @@ static inline uint8_t movingAvg(int *ptrArrNumbers, long *ptrSum, int pos,
   return *ptrSum / len;
 }
 
-#endif /* __MEDIAN_HPP__ */
+#endif /* MEDIAN_HPP */

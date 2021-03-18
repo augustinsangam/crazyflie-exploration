@@ -1,7 +1,7 @@
 #include <math.h>
 
-#include "sgba_portage.hpp"
-#include "wallfollowing_with_avoid.hpp"
+#include "portage.hpp"
+#include "wall_following_with_avoid.hpp"
 
 int sgba::WallFollowingWithAvoid::transition(int new_state) {
   float t = sgba::us_timestamp() / 1e6;

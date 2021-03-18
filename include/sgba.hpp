@@ -1,7 +1,7 @@
-#ifndef __SGBA_HPP__
-#define __SGBA_HPP__
+#ifndef SGBA_HPP
+#define SGBA_HPP
 
-#include "wallfollowing.hpp"
+#include "wall_following.hpp"
 #include <cstdint>
 
 namespace sgba {
@@ -37,4 +37,4 @@ private:
 
 } // namespace sgba
 
-#endif /* __SGBA_HPP__ */
+#endif /* SGBA_HPP */

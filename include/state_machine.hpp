@@ -1,16 +1,16 @@
-#ifndef __STATE_MACHINE_HPP__
-#define __STATE_MACHINE_HPP__
+#ifndef STATE_MACHINE_HPP
+#define STATE_MACHINE_HPP
 #include "p2p.hpp"
 #include "sgba.hpp"
 #include "stabilizer_types.hpp"
-#include "wallfollowing.hpp"
-#include "wallfollowing_with_avoid.hpp"
+#include "wall_following.hpp"
+#include "wall_following_with_avoid.hpp"
 
 namespace sgba {
 
 class wall_following_controller {
 public:
-  void fsm_loop_iteration();
+  void iteration_loop();
   void p2pCallbackHandler(P2PPacket *p);
 
 private:
@@ -66,4 +66,4 @@ private:
 };
 
 } // namespace sgba
-#endif /* __STATE_MACHINE_HPP__ */
+#endif /* STATE_MACHINE_HPP */

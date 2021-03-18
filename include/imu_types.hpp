@@ -1,5 +1,5 @@
-#ifndef __IMU_TYPES_HPP__
-#define __IMU_TYPES_HPP__
+#ifndef IMU_TYPES_HPP
+#define IMU_TYPES_HPP
 
 #include <cstdint>
 
@@ -43,4 +43,4 @@ typedef union {
 
 } // namespace sgba
 
-#endif /* __IMU_TYPES_HPP__ */
+#endif /* IMU_TYPES_HPP */

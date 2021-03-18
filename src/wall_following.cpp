@@ -1,7 +1,7 @@
 #include <math.h>
 
-#include "sgba_portage.hpp"
-#include "wallfollowing.hpp"
+#include "portage.hpp"
+#include "wall_following.hpp"
 
 void sgba::WallFollowing::wall_follower_init(float new_ref_distance_from_wall,
                                              float max_speed_ref,

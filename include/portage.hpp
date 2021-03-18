@@ -1,11 +1,30 @@
-#ifndef __SGBA_PORTAGE__HPP__
-#define __SGBA_PORTAGE__HPP__
+#ifndef PORTAGE__HPP
+#define PORTAGE__HPP
 
 #include "p2p.hpp"
 #include "stabilizer_types.hpp"
 #include <cstdint>
 
 namespace sgba {
+
+#ifndef TICKS_PER_FSM_LOOP
+#error "Macro `TICKS_PER_FSM_LOOP` is required"
+#endif
+
+/*
+Switch to multiple methods, that increases in complexity
+* 1 = wall_following: Go forward and follow walls with the multiranger
+* 2 = wall following with avoid: This also follows walls but will move away if
+another Crazyflie with an lower ID is coming close
+* 3 = SGBA: The SGBA method
+that incorporates the above methods.
+
+NOTE: the switching between outbound and
+inbound has not been implemented yet
+*/
+#ifndef EXPLORATION_METHOD
+#error "Macro `EXPLORATION_METHOD` is required"
+#endif
 
 /**
  * Get microsecond-resolution timestamp.
@@ -31,27 +50,6 @@ float get_left_range();  // Between 0 and 1
 float get_back_range();  // Between 0 and 1
 float get_up_range();    // Between 0 and 1
 
-#ifndef TICKS_PER_FSM_LOOP
-#warning Macro "TICKS_PER_FSM_LOOP" is required. Set to default value 10
-#define TICKS_PER_FSM_LOOP 10
-#endif
-
-/*
-Switch to multiple methods, that increases in complexity
-* 1 = wall_following: Go forward and follow walls with the multiranger
-* 2 = wall following with avoid: This also follows walls but will move away if
-another Crazyflie with an lower ID is coming close
-* 3 = SGBA: The SGBA method
-that incorporates the above methods.
-
-NOTE: the switching between outbound and
-inbound has not been implemented yet
-*/
-#ifndef EXPLORATION_METHOD
-#warning Macro "EXPLORATION_METHOD" is required. Set to default value 1
-#define EXPLORATION_METHOD 3
-#endif
-
 } // namespace sgba
 
-#endif /* __SGBA_PORTAGE__HPP__ */
+#endif /* PORTAGE__HPP */

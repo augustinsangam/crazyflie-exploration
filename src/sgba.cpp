@@ -2,7 +2,7 @@
 #include <stdlib.h>
 
 #include "sgba.hpp"
-#include "sgba_portage.hpp"
+#include "portage.hpp"
 
 // Converts degrees to radians.
 #define deg2rad(angleDegrees) (angleDegrees * (float)M_PI / 180.0f)

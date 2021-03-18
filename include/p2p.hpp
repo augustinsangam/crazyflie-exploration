@@ -1,5 +1,5 @@
-#ifndef __P2P_HPP__
-#define __P2P_HPP__
+#ifndef P2P_HPP
+#define P2P_HPP
 
 #include <cstdint>
 
@@ -23,4 +23,4 @@ typedef void (*P2PCallback)(P2PPacket *);
 
 } // namespace sgba
 
-#endif /* __P2P_HPP__ */
+#endif /* P2P_HPP */

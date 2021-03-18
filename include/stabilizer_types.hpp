@@ -1,5 +1,5 @@
-#ifndef __STABILIZER_TYPES_HPP__
-#define __STABILIZER_TYPES_HPP__
+#ifndef STABILIZER_TYPES_HPP
+#define STABILIZER_TYPES_HPP
 
 #include "imu_types.hpp"
 #include <cstdint>
@@ -100,4 +100,4 @@ typedef struct setpoint_s {
   ((TICK % (RATE_MAIN_LOOP / RATE_HZ)) == 0)
 
 } // namespace sgba
-#endif /* __STABILIZER_TYPES_HPP__ */
+#endif /* STABILIZER_TYPES_HPP */

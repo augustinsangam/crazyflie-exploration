@@ -1,5 +1,5 @@
-#ifndef __WALL_FOLLOWING_HPP__
-#define __WALL_FOLLOWING_HPP__
+#ifndef WALL_FOLLOWING_HPP
+#define WALL_FOLLOWING_HPP
 #include <stdbool.h>
 #include <stdint.h>
 
@@ -38,4 +38,4 @@ private:
 };
 
 } // namespace sgba
-#endif /* __WALL_FOLLOWING_HPP__ */
+#endif /* WALL_FOLLOWING_HPP */

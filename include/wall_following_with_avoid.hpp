@@ -1,7 +1,7 @@
-#ifndef __WALLFOLLOWING_WITH_AVOID_HPP_
-#define __WALLFOLLOWING_WITH_AVOID_HPP_
+#ifndef WALL_FOLLOWING_WITH_AVOID_HPP
+#define WALL_FOLLOWING_WITH_AVOID_HPP
 
-#include "wallfollowing.hpp"
+#include "wall_following.hpp"
 #include <cstdint>
 
 namespace sgba {
@@ -30,4 +30,4 @@ private:
 };
 
 } // namespace sgba
-#endif /* __WALLFOLLOWING_WITH_AVOID_HPP_ */
+#endif /* WALL_FOLLOWING_WITH_AVOID_HPP */

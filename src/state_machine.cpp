@@ -3,7 +3,7 @@
 #include <cstring>
 
 #include "median_filter.hpp"
-#include "sgba_portage.hpp"
+#include "portage.hpp"
 #include "state_machine.hpp"
 
 #define STATE_MACHINE_COMMANDER_PRI 3
@@ -79,7 +79,7 @@ static int32_t find_minimum(uint8_t a[], int32_t n) {
   return index;
 }
 
-void sgba::wall_following_controller::fsm_loop_iteration() {
+void sgba::wall_following_controller::iteration_loop() {
   static struct MedianFilterFloat medFilt;
   init_median_filter_f(&medFilt, 5);
   static struct MedianFilterFloat medFilt_2;
