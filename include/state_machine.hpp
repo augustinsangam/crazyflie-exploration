@@ -6,19 +6,6 @@
 #include "wallfollowing.hpp"
 #include "wallfollowing_with_avoid.hpp"
 
-/*
-Switch to multiple methods, that increases in complexity
-* 1 = wall_following: Go forward and follow walls with the multiranger
-* 2 = wall following with avoid: This also follows walls but will move away if
-another Crazyflie with an lower ID is coming close
-* 3 = SGBA: The SGBA method
-that incorporates the above methods.
-
-NOTE: the switching between outbound and
-inbound has not been implemented yet
-*/
-#define METHOD 1
-
 namespace sgba {
 
 class wall_following_controller {
@@ -55,7 +42,7 @@ private:
   float rssi_angle;
   int state;
 
-#if METHOD == 3
+#if EXPLORATION_METHOD == 3
   int state_wf;
 #endif
 
@@ -69,12 +56,12 @@ private:
   float rssi_angle_array_other_drones[9] = {500.0f};
   uint8_t id_inter_closest = 100;
 
-#if METHOD == 1
+#if EXPLORATION_METHOD == 1
   WallFollowing exploration_controller_;
-#elif METHOD == 2
+#elif EXPLORATION_METHOD == 2
   WallFollowingWithAvoid exploration_controller_;
-#elif METHOD == 3
-  SgbaController exploration_controller_;
+#elif EXPLORATION_METHOD == 3
+  Sgba exploration_controller_;
 #endif
 };
 

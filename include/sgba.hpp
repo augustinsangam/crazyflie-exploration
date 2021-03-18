@@ -6,7 +6,7 @@
 
 namespace sgba {
 
-class SgbaController {
+class Sgba {
 
 public:
   void init_sgba_controller(float new_ref_distance_from_wall,

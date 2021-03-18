@@ -95,13 +95,13 @@ void sgba::wall_following_controller::sgba_fsm_loop_iteration(void *param) {
   memcpy(&p_reply.data[1], &rssi_angle, sizeof(float));
   p_reply.size = 5;
 
-#if METHOD != 1
+#if EXPLORATION_METHOD != 1
   static uint64_t radioSendBroadcastTime = 0;
 #endif
 
   static uint64_t takeoffdelaytime = 0;
 
-#if METHOD == 3
+#if EXPLORATION_METHOD == 3
   static bool outbound = true;
 #endif
 
@@ -167,7 +167,7 @@ void sgba::wall_following_controller::sgba_fsm_loop_iteration(void *param) {
       correctly_initialized = true;
     }
 
-#if METHOD == 3
+#if EXPLORATION_METHOD == 3
     uint8_t rssi_beacon_threshold = 41;
     if (keep_flying == true &&
         (!correctly_initialized || up_range < 0.2f ||
@@ -193,13 +193,13 @@ void sgba::wall_following_controller::sgba_fsm_loop_iteration(void *param) {
         vel_w_cmd = 0;
         hover(&setpoint_BG, nominal_height);
 
-#if METHOD == 1 // WALL_FOLLOWING
+#if EXPLORATION_METHOD == 1 // WALL_FOLLOWING
                 // wall following state machine
         state = exploration_controller_.wall_follower(
             &vel_x_cmd, &vel_y_cmd, &vel_w_cmd, front_range, right_range,
             heading_rad, 1);
 #endif
-#if METHOD == 2 // WALL_FOLLOWER_AND_AVOID
+#if EXPLORATION_METHOD == 2 // WALL_FOLLOWER_AND_AVOID
         if (id_inter_closest > my_id) {
           rssi_inter_filtered = 140;
         }
@@ -208,7 +208,7 @@ void sgba::wall_following_controller::sgba_fsm_loop_iteration(void *param) {
             &vel_x_cmd, &vel_y_cmd, &vel_w_cmd, front_range, left_range,
             right_range, heading_rad, rssi_inter_filtered);
 #endif
-#if METHOD == 3 // SwWARM GRADIENT BUG ALGORITHM
+#if EXPLORATION_METHOD == 3 // SwWARM GRADIENT BUG ALGORITHM
 
         bool priority = false;
         if (id_inter_closest > my_id) {
@@ -245,10 +245,10 @@ void sgba::wall_following_controller::sgba_fsm_loop_iteration(void *param) {
           if (height > nominal_height) {
             taken_off = true;
 
-#if METHOD == 1 // wall following
+#if EXPLORATION_METHOD == 1 // wall following
             exploration_controller_.wall_follower_init(0.4, 0.5, 1);
 #endif
-#if METHOD == 2 // wallfollowing with avoid
+#if EXPLORATION_METHOD == 2 // wallfollowing with avoid
             if (my_id % 2 == 1)
               exploration_controller_.init_wall_follower_and_avoid_controller(
                   0.4, 0.5, -1);
@@ -257,7 +257,7 @@ void sgba::wall_following_controller::sgba_fsm_loop_iteration(void *param) {
                   0.4, 0.5, 1);
 
 #endif
-#if METHOD == 3 // Swarm Gradient Bug Algorithm
+#if EXPLORATION_METHOD == 3 // Swarm Gradient Bug Algorithm
             if (my_id == 4 || my_id == 8) {
               exploration_controller_.init_sgba_controller(0.4, 0.5, -0.8);
             } else if (my_id == 2 || my_id == 6) {
@@ -305,7 +305,7 @@ void sgba::wall_following_controller::sgba_fsm_loop_iteration(void *param) {
       }
     }
 
-#if METHOD != 1
+#if EXPLORATION_METHOD != 1
     if (sgba::us_timestamp() >= radioSendBroadcastTime + 1000 * 500) {
       sgba::radiolinkSendP2PPacketBroadcast(&p_reply);
       radioSendBroadcastTime = sgba::us_timestamp();

@@ -11,7 +11,6 @@ namespace sgba {
  * Get microsecond-resolution timestamp.
  */
 uint64_t us_timestamp(void);
-void p2p_register_cb(P2PCallback cb);
 uint64_t config_block_get_radio_address(void);
 void system_wait_start(void);
 void ticks_delay(uint32_t nTicksToDelay);
@@ -35,6 +34,22 @@ float get_up_range();    // Between 0 and 1
 #ifndef TICKS_PER_FSM_LOOP
 #warning Macro "TICKS_PER_FSM_LOOP" is required. Set to default value 10
 #define TICKS_PER_FSM_LOOP 10
+#endif
+
+/*
+Switch to multiple methods, that increases in complexity
+* 1 = wall_following: Go forward and follow walls with the multiranger
+* 2 = wall following with avoid: This also follows walls but will move away if
+another Crazyflie with an lower ID is coming close
+* 3 = SGBA: The SGBA method
+that incorporates the above methods.
+
+NOTE: the switching between outbound and
+inbound has not been implemented yet
+*/
+#ifndef EXPLORATION_METHOD
+#warning Macro "EXPLORATION_METHOD" is required. Set to default value 1
+#define EXPLORATION_METHOD 3
 #endif
 
 } // namespace sgba
