@@ -1,4 +1,4 @@
-#include <math.h>
+#include <cmath>
 
 #include "porting.hpp"
 #include "wall_following.hpp"
