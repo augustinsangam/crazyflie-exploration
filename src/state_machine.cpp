@@ -3,64 +3,64 @@
 #include <cstring>
 
 #include "median_filter.hpp"
-#include "portage.hpp"
+#include "porting.hpp"
 #include "state_machine.hpp"
 
 #define STATE_MACHINE_COMMANDER_PRI 3
 
 #define MANUAL_STARTUP_TIMEOUT M2T(3000)
 
-static void take_off(sgba::setpoint_t *sp, float velocity) {
-  sp->mode.x = sgba::modeVelocity;
-  sp->mode.y = sgba::modeVelocity;
-  sp->mode.z = sgba::modeVelocity;
+static void take_off(exploration::setpoint_t *sp, float velocity) {
+  sp->mode.x = exploration::modeVelocity;
+  sp->mode.y = exploration::modeVelocity;
+  sp->mode.z = exploration::modeVelocity;
   sp->velocity.x = 0.0;
   sp->velocity.y = 0.0;
   sp->velocity.z = velocity;
-  sp->mode.yaw = sgba::modeVelocity;
+  sp->mode.yaw = exploration::modeVelocity;
   sp->attitudeRate.yaw = 0.0;
 }
 
-static void land(sgba::setpoint_t *sp, float velocity) {
-  sp->mode.x = sgba::modeVelocity;
-  sp->mode.y = sgba::modeVelocity;
-  sp->mode.z = sgba::modeVelocity;
+static void land(exploration::setpoint_t *sp, float velocity) {
+  sp->mode.x = exploration::modeVelocity;
+  sp->mode.y = exploration::modeVelocity;
+  sp->mode.z = exploration::modeVelocity;
   sp->velocity.x = 0.0;
   sp->velocity.y = 0.0;
   sp->velocity.z = -velocity;
-  sp->mode.yaw = sgba::modeVelocity;
+  sp->mode.yaw = exploration::modeVelocity;
   sp->attitudeRate.yaw = 0.0;
 }
 
-static void hover(sgba::setpoint_t *sp, float height) {
-  sp->mode.x = sgba::modeVelocity;
-  sp->mode.y = sgba::modeVelocity;
-  sp->mode.z = sgba::modeAbs;
+static void hover(exploration::setpoint_t *sp, float height) {
+  sp->mode.x = exploration::modeVelocity;
+  sp->mode.y = exploration::modeVelocity;
+  sp->mode.z = exploration::modeAbs;
   sp->velocity.x = 0.0;
   sp->velocity.y = 0.0;
   sp->position.z = height;
-  sp->mode.yaw = sgba::modeVelocity;
+  sp->mode.yaw = exploration::modeVelocity;
   sp->attitudeRate.yaw = 0.0;
 }
 
-static void vel_command(sgba::setpoint_t *sp, float vel_x, float vel_y,
+static void vel_command(exploration::setpoint_t *sp, float vel_x, float vel_y,
                         float yaw_rate, float height) {
-  sp->mode.x = sgba::modeVelocity;
-  sp->mode.y = sgba::modeVelocity;
-  sp->mode.z = sgba::modeAbs;
+  sp->mode.x = exploration::modeVelocity;
+  sp->mode.y = exploration::modeVelocity;
+  sp->mode.z = exploration::modeAbs;
   sp->velocity.x = vel_x;
   sp->velocity.y = vel_y;
   sp->position.z = height;
-  sp->mode.yaw = sgba::modeVelocity;
+  sp->mode.yaw = exploration::modeVelocity;
   sp->attitudeRate.yaw = yaw_rate;
   sp->velocity_body = true;
 }
 
-static void shut_off_engines(sgba::setpoint_t *sp) {
-  sp->mode.x = sgba::modeDisable;
-  sp->mode.y = sgba::modeDisable;
-  sp->mode.z = sgba::modeDisable;
-  sp->mode.yaw = sgba::modeDisable;
+static void shut_off_engines(exploration::setpoint_t *sp) {
+  sp->mode.x = exploration::modeDisable;
+  sp->mode.y = exploration::modeDisable;
+  sp->mode.z = exploration::modeDisable;
+  sp->mode.yaw = exploration::modeDisable;
 }
 
 static int32_t find_minimum(uint8_t a[], int32_t n) {
@@ -79,7 +79,7 @@ static int32_t find_minimum(uint8_t a[], int32_t n) {
   return index;
 }
 
-void sgba::wall_following_controller::iteration_loop() {
+void exploration::wall_following_controller::iteration_loop() {
   static struct MedianFilterFloat medFilt;
   init_median_filter_f(&medFilt, 5);
   static struct MedianFilterFloat medFilt_2;
@@ -87,9 +87,9 @@ void sgba::wall_following_controller::iteration_loop() {
   static struct MedianFilterFloat medFilt_3;
   init_median_filter_f(&medFilt_3, 13);
   // p2p_register_cb(p2pCallbackHandler);
-  uint64_t address = sgba::config_block_get_radio_address();
+  uint64_t address = exploration::config_block_get_radio_address();
   uint8_t my_id = (uint8_t)((address)&0x00000000ff);
-  static sgba::P2PPacket p_reply;
+  static exploration::P2PPacket p_reply;
   p_reply.port = 0x00;
   p_reply.data[0] = my_id;
   memcpy(&p_reply.data[1], &rssi_angle, sizeof(float));
@@ -105,17 +105,18 @@ void sgba::wall_following_controller::iteration_loop() {
   static bool outbound = true;
 #endif
 
-  sgba::system_wait_start();
-  sgba::ticks_delay(sgba::ms_to_ticks(3000));
+  exploration::system_wait_start();
+  exploration::ticks_delay(exploration::ms_to_ticks(3000));
 
   while (1) {
     // some delay before the whole thing starts
-    sgba::ticks_delay(TICKS_PER_FSM_LOOP);
+    exploration::ticks_delay(TICKS_PER_FSM_LOOP);
     // For every 1 second, reset the RSSI value to high if it hasn't been
     // received for a while
     for (uint8_t it = 0; it < 9; it++)
-      if (sgba::us_timestamp() >= time_array_other_drones[it] + 1000 * 1000) {
-        time_array_other_drones[it] = sgba::us_timestamp() + 1000 * 1000 + 1;
+      if (porting::us_timestamp() >=
+          time_array_other_drones[it] + 1000 * 1000) {
+        time_array_other_drones[it] = porting::us_timestamp() + 1000 * 1000 + 1;
         rssi_array_other_drones[it] = 150;
         rssi_angle_array_other_drones[it] = 500.0f;
       }
@@ -129,30 +130,30 @@ void sgba::wall_following_controller::iteration_loop() {
         (uint8_t)update_median_filter_f(&medFilt_2, (float)rssi_inter_closest);
 
     // checking init of multiranger and flowdeck
-    uint8_t multiranger_isinit = sgba::get_deck_bc_multiranger();
-    uint8_t flowdeck_isinit = sgba::get_deck_bc_flow2();
+    uint8_t multiranger_isinit = exploration::get_deck_bc_multiranger();
+    uint8_t flowdeck_isinit = exploration::get_deck_bc_flow2();
 
     // get current height and heading
-    height = sgba::get_kalman_state_z();
-    float heading_deg = sgba::get_stabilizer_yaw();
+    height = exploration::get_kalman_state_z();
+    float heading_deg = exploration::get_stabilizer_yaw();
     heading_rad = heading_deg * (float)M_PI / 180.0f;
 
     // t RSSI of beacon
-    rssi_beacon = sgba::get_radio_rssi();
+    rssi_beacon = exploration::get_radio_rssi();
     rssi_beacon_filtered =
         (uint8_t)update_median_filter_f(&medFilt_3, (float)rssi_beacon);
 
     // Select which laser range sensor readings to use
     if (multiranger_isinit) {
-      front_range = sgba::get_front_range() / 1000.0f;
-      right_range = sgba::get_right_range() / 1000.0f;
-      left_range = sgba::get_left_range() / 1000.0f;
-      back_range = sgba::get_back_range() / 1000.0f;
-      up_range = sgba::get_up_range() / 1000.0f;
+      front_range = exploration::get_front_range() / 1000.0f;
+      right_range = exploration::get_right_range() / 1000.0f;
+      left_range = exploration::get_left_range() / 1000.0f;
+      back_range = exploration::get_back_range() / 1000.0f;
+      up_range = exploration::get_up_range() / 1000.0f;
     }
 
     // Get position estimate of kalman filter
-    sgba::point_t pos;
+    exploration::point_t pos;
     estimator_kalman_get_estimated_pos(&pos); // TODO : Position of the drone
 
     // Initialize setpoint
@@ -194,7 +195,7 @@ void sgba::wall_following_controller::iteration_loop() {
         hover(&setpoint_BG, nominal_height);
 
 #if EXPLORATION_METHOD == 1 // WALL_FOLLOWING
-                // wall following state machine
+        // wall following state machine
         state = exploration_controller_.wall_follower(
             &vel_x_cmd, &vel_y_cmd, &vel_w_cmd, front_range, right_range,
             heading_rad, 1);
@@ -239,7 +240,7 @@ void sgba::wall_following_controller::iteration_loop() {
          *  but the crazyflie  has not taken off
          *   then take off
          */
-        if (sgba::us_timestamp() >= takeoffdelaytime + 1000 * 1000 * my_id) {
+        if (porting::us_timestamp() >= takeoffdelaytime + 1000 * 1000 * my_id) {
 
           take_off(&setpoint_BG, nominal_height);
           if (height > nominal_height) {
@@ -300,15 +301,15 @@ void sgba::wall_following_controller::iteration_loop() {
          *   then keep engines off
          */
         shut_off_engines(&setpoint_BG);
-        takeoffdelaytime = sgba::us_timestamp();
+        takeoffdelaytime = porting::us_timestamp();
         on_the_ground = true;
       }
     }
 
 #if EXPLORATION_METHOD != 1
-    if (sgba::us_timestamp() >= radioSendBroadcastTime + 1000 * 500) {
-      sgba::radiolinkSendP2PPacketBroadcast(&p_reply);
-      radioSendBroadcastTime = sgba::us_timestamp();
+    if (porting::us_timestamp() >= radioSendBroadcastTime + 1000 * 500) {
+      exploration::radiolinkSendP2PPacketBroadcast(&p_reply);
+      radioSendBroadcastTime = porting::us_timestamp();
     }
 
 #endif
@@ -316,7 +317,7 @@ void sgba::wall_following_controller::iteration_loop() {
   }
 }
 
-void sgba::wall_following_controller::p2pCallbackHandler(P2PPacket *p) {
+void exploration::wall_following_controller::p2pCallbackHandler(P2PPacket *p) {
   id_inter_ext = p->data[0];
 
   if (id_inter_ext == 0x63) {
@@ -330,7 +331,7 @@ void sgba::wall_following_controller::p2pCallbackHandler(P2PPacket *p) {
     memcpy(&rssi_angle_inter_ext, &p->data[1], sizeof(float));
 
     rssi_array_other_drones[id_inter_ext] = rssi_inter;
-    time_array_other_drones[id_inter_ext] = sgba::us_timestamp();
+    time_array_other_drones[id_inter_ext] = porting::us_timestamp();
     rssi_angle_array_other_drones[id_inter_ext] = rssi_angle_inter_ext;
   }
 }

@@ -1,11 +1,10 @@
-#ifndef PORTAGE__HPP
-#define PORTAGE__HPP
+#ifndef PORTING__HPP
+#define PORTING__HPP
+
+#include <cstdint>
 
 #include "p2p.hpp"
 #include "stabilizer_types.hpp"
-#include <cstdint>
-
-namespace sgba {
 
 #ifndef TICKS_PER_FSM_LOOP
 #error "Macro `TICKS_PER_FSM_LOOP` is required"
@@ -26,6 +25,8 @@ inbound has not been implemented yet
 #error "Macro `EXPLORATION_METHOD` is required"
 #endif
 
+namespace porting {
+
 /**
  * Get microsecond-resolution timestamp.
  */
@@ -34,9 +35,9 @@ uint64_t config_block_get_radio_address(void);
 void system_wait_start(void);
 void ticks_delay(uint32_t nTicksToDelay);
 uint32_t ms_to_ticks(uint16_t ms);
-void commander_set_setpoint(setpoint_t *setpoint, int priority);
-void estimator_kalman_get_estimated_pos(point_t *pos);
-bool radiolinkSendP2PPacketBroadcast(P2PPacket *p2pp);
+void commander_set_setpoint(exploration::setpoint_t *setpoint, int priority);
+void estimator_kalman_get_estimated_pos(exploration::point_t *pos);
+bool radiolinkSendP2PPacketBroadcast(exploration::P2PPacket *p2pp);
 
 uint8_t get_deck_bc_multiranger();
 uint8_t get_deck_bc_flow2();
@@ -50,6 +51,6 @@ float get_left_range();  // Between 0 and 1
 float get_back_range();  // Between 0 and 1
 float get_up_range();    // Between 0 and 1
 
-} // namespace sgba
+} // namespace porting
 
-#endif /* PORTAGE__HPP */
+#endif /* PORTING__HPP */

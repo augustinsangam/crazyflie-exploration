@@ -1,10 +1,11 @@
 #ifndef STABILIZER_TYPES_HPP
 #define STABILIZER_TYPES_HPP
 
-#include "imu_types.hpp"
 #include <cstdint>
 
-namespace sgba {
+#include "imu_types.hpp"
+
+namespace exploration {
 /* Data structure used by the stabilizer subsystem.
  * All have a timestamp to be set when the data is calculated.
  */
@@ -99,5 +100,5 @@ typedef struct setpoint_s {
 #define RATE_DO_EXECUTE(RATE_HZ, TICK)                                         \
   ((TICK % (RATE_MAIN_LOOP / RATE_HZ)) == 0)
 
-} // namespace sgba
+} // namespace exploration
 #endif /* STABILIZER_TYPES_HPP */

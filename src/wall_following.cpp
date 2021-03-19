@@ -1,11 +1,10 @@
 #include <math.h>
 
-#include "portage.hpp"
+#include "porting.hpp"
 #include "wall_following.hpp"
 
-void sgba::WallFollowing::wall_follower_init(float new_ref_distance_from_wall,
-                                             float max_speed_ref,
-                                             int init_state) {
+void exploration::WallFollowing::wall_follower_init(
+    float new_ref_distance_from_wall, float max_speed_ref, int init_state) {
   ref_distance_from_wall_ = new_ref_distance_from_wall;
   max_speed_ = max_speed_ref;
   first_run_ = true;
@@ -34,13 +33,13 @@ static float wrap_to_pi(float number) {
   }
 }
 
-void sgba::WallFollowing::command_turn(float *vel_x, float *vel_w,
-                                       float ref_rate) {
+void exploration::WallFollowing::command_turn(float *vel_x, float *vel_w,
+                                              float ref_rate) {
   *vel_x = 0.0;
   *vel_w = direction_ * ref_rate;
 }
 
-void sgba::WallFollowing::command_align_corner(
+void exploration::WallFollowing::command_align_corner(
     float *vel_y, float *vel_w, float ref_rate, float range,
     float wanted_distance_from_corner) {
 
@@ -64,8 +63,9 @@ static void command_hover(float *vel_x, float *vel_y, float *vel_w) {
   *vel_w = 0.0;
 }
 
-void sgba::WallFollowing::command_forward_along_wall(float *vel_x, float *vel_y,
-                                                     float range) {
+void exploration::WallFollowing::command_forward_along_wall(float *vel_x,
+                                                            float *vel_y,
+                                                            float range) {
   *vel_x = max_speed_;
   bool check_distance_wall =
       logic_is_close_to(ref_distance_from_wall_, range, 0.1);
@@ -79,7 +79,7 @@ void sgba::WallFollowing::command_forward_along_wall(float *vel_x, float *vel_y,
   }
 }
 
-void sgba::WallFollowing::command_turn_around_corner_and_adjust(
+void exploration::WallFollowing::command_turn_around_corner_and_adjust(
     float *vel_x, float *vel_y, float *vel_w, float radius, float range) {
   *vel_x = max_speed_;
   *vel_w = direction_ * (-1 * (*vel_x) / radius);
@@ -97,32 +97,35 @@ void sgba::WallFollowing::command_turn_around_corner_and_adjust(
   }
 }
 
-void sgba::WallFollowing::command_turn_and_adjust(float *vel_y, float *vel_w,
-                                                  float rate, float range) {
+void exploration::WallFollowing::command_turn_and_adjust(float *vel_y,
+                                                         float *vel_w,
+                                                         float rate,
+                                                         float range) {
   *vel_w = direction_ * rate;
   *vel_y = 0;
 }
 
-int sgba::WallFollowing::transition(int new_state) {
-  float t = sgba::us_timestamp() / 1e6;
+int exploration::WallFollowing::transition(int new_state) {
+  float t = porting::us_timestamp() / 1e6;
   state_start_time_ = t;
   return new_state;
 }
 
-void sgba::WallFollowing::adjust_distance_wall(float distance_wall_new) {
+void exploration::WallFollowing::adjust_distance_wall(float distance_wall_new) {
   ref_distance_from_wall_ = distance_wall_new;
 }
 
-int sgba::WallFollowing::wall_follower(float *vel_x, float *vel_y, float *vel_w,
-                                       float front_range, float side_range,
-                                       float current_heading,
-                                       int direction_turn) {
+int exploration::WallFollowing::wall_follower(float *vel_x, float *vel_y,
+                                              float *vel_w, float front_range,
+                                              float side_range,
+                                              float current_heading,
+                                              int direction_turn) {
 
   direction_ = direction_turn;
   static float previous_heading = 0;
   static float angle = 0;
   static bool around_corner_go_back = false;
-  float now = sgba::us_timestamp() / 1e6;
+  float now = porting::us_timestamp() / 1e6;
 
   if (first_run_) {
     previous_heading = current_heading;

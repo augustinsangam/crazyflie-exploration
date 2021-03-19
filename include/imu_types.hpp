@@ -3,7 +3,7 @@
 
 #include <cstdint>
 
-namespace sgba {
+namespace exploration {
 
 typedef union {
   struct {
@@ -41,6 +41,6 @@ typedef union {
   float axis[3];
 } Axis3f;
 
-} // namespace sgba
+} // namespace exploration
 
 #endif /* IMU_TYPES_HPP */

@@ -1,12 +1,13 @@
 #ifndef STATE_MACHINE_HPP
 #define STATE_MACHINE_HPP
+
 #include "p2p.hpp"
 #include "sgba.hpp"
 #include "stabilizer_types.hpp"
 #include "wall_following.hpp"
 #include "wall_following_with_avoid.hpp"
 
-namespace sgba {
+namespace exploration {
 
 class wall_following_controller {
 public:
@@ -31,7 +32,7 @@ private:
   uint8_t rssi_beacon_filtered;
 
   uint8_t id_inter_ext;
-  sgba::setpoint_t setpoint_BG;
+  exploration::setpoint_t setpoint_BG;
   float vel_x_cmd, vel_y_cmd, vel_w_cmd;
   float heading_rad;
   float right_range;
@@ -65,5 +66,5 @@ private:
 #endif
 };
 
-} // namespace sgba
+} // namespace exploration
 #endif /* STATE_MACHINE_HPP */
