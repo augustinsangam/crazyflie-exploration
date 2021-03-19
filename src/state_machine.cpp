@@ -2,6 +2,7 @@
 #include <cmath>
 #include <cstring>
 
+#include "math_supp.hpp"
 #include "median_filter.hpp"
 #include "porting.hpp"
 #include "state_machine.hpp"
@@ -138,7 +139,7 @@ void exploration::StateMachine::iteration_loop() {
 		// get current height and heading
 		height = porting::get_kalman_state_z();
 		float heading_deg = porting::get_stabilizer_yaw();
-		heading_rad = heading_deg * (float)M_PI / 180.0f;
+		heading_rad = deg_to_rag(heading_deg);
 
 		// t RSSI of beacon
 		rssi_beacon = porting::get_radio_rssi();
@@ -236,7 +237,7 @@ void exploration::StateMachine::iteration_loop() {
 #endif
 
 				// convert yaw rate commands to degrees
-				float vel_w_cmd_convert = vel_w_cmd * 180.0f / (float)M_PI;
+				float vel_w_cmd_convert = rad_to_deg(vel_w_cmd);
 
 				vel_command(&setpoint_BG, vel_x_cmd, vel_y_cmd,
 				            vel_w_cmd_convert, nominal_height);
