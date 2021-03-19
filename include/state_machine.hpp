@@ -9,7 +9,7 @@
 
 namespace exploration {
 
-class wall_following_controller {
+class StateMachine {
 public:
   void iteration_loop();
   void p2pCallbackHandler(P2PPacket *p);
