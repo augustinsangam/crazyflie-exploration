@@ -11,58 +11,58 @@ namespace exploration {
 
 class StateMachine {
 public:
-  void iteration_loop();
-  void p2pCallbackHandler(P2PPacket *p);
+	void iteration_loop();
+	void p2pCallbackHandler(P2PPacket *p);
 
 private:
-  bool keep_flying = false;
+	bool keep_flying = false;
 
-  float height;
+	float height;
 
-  bool taken_off = false;
-  float nominal_height = 0.3;
+	bool taken_off = false;
+	float nominal_height = 0.3;
 
-  uint8_t rssi_inter;
-  uint8_t rssi_inter_filtered;
-  uint8_t rssi_inter_closest;
+	uint8_t rssi_inter;
+	uint8_t rssi_inter_filtered;
+	uint8_t rssi_inter_closest;
 
-  float rssi_angle_inter_ext;
-  float rssi_angle_inter_closest;
-  uint8_t rssi_beacon;
-  uint8_t rssi_beacon_filtered;
+	float rssi_angle_inter_ext;
+	float rssi_angle_inter_closest;
+	uint8_t rssi_beacon;
+	uint8_t rssi_beacon_filtered;
 
-  uint8_t id_inter_ext;
-  exploration::setpoint_t setpoint_BG;
-  float vel_x_cmd, vel_y_cmd, vel_w_cmd;
-  float heading_rad;
-  float right_range;
-  float front_range;
-  float left_range;
-  float up_range;
-  float back_range;
-  float rssi_angle;
-  int state;
+	uint8_t id_inter_ext;
+	exploration::setpoint_t setpoint_BG;
+	float vel_x_cmd, vel_y_cmd, vel_w_cmd;
+	float heading_rad;
+	float right_range;
+	float front_range;
+	float left_range;
+	float up_range;
+	float back_range;
+	float rssi_angle;
+	int state;
 
 #if EXPLORATION_METHOD == 3
-  int state_wf;
+	int state_wf;
 #endif
 
-  float up_range_filtered;
-  int varid;
-  bool on_the_ground = true;
-  bool correctly_initialized;
-  uint8_t rssi_array_other_drones[9] = {150, 150, 150, 150, 150,
-                                        150, 150, 150, 150};
-  uint64_t time_array_other_drones[9] = {0};
-  float rssi_angle_array_other_drones[9] = {500.0f};
-  uint8_t id_inter_closest = 100;
+	float up_range_filtered;
+	int varid;
+	bool on_the_ground = true;
+	bool correctly_initialized;
+	uint8_t rssi_array_other_drones[9] = {150, 150, 150, 150, 150,
+	                                      150, 150, 150, 150};
+	uint64_t time_array_other_drones[9] = {0};
+	float rssi_angle_array_other_drones[9] = {500.0f};
+	uint8_t id_inter_closest = 100;
 
 #if EXPLORATION_METHOD == 1
-  WallFollowing exploration_controller_;
+	WallFollowing exploration_controller_;
 #elif EXPLORATION_METHOD == 2
-  WallFollowingWithAvoid exploration_controller_;
+	WallFollowingWithAvoid exploration_controller_;
 #elif EXPLORATION_METHOD == 3
-  Sgba exploration_controller_;
+	Sgba exploration_controller_;
 #endif
 };
 

@@ -7,7 +7,7 @@
 #include "stabilizer_types.hpp"
 
 #ifndef TICKS_PER_FSM_LOOP
-#error "Macro `TICKS_PER_FSM_LOOP` is required"
+#	error "Macro `TICKS_PER_FSM_LOOP` is required"
 #endif
 
 /*
@@ -22,7 +22,7 @@ NOTE: the switching between outbound and
 inbound has not been implemented yet
 */
 #ifndef EXPLORATION_METHOD
-#error "Macro `EXPLORATION_METHOD` is required"
+#	error "Macro `EXPLORATION_METHOD` is required"
 #endif
 
 namespace porting {
