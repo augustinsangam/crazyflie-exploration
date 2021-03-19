@@ -1,10 +1,11 @@
 #ifndef SGBA_HPP
 #define SGBA_HPP
 
-#include "wall_following.hpp"
 #include <cstdint>
 
-namespace sgba {
+#include "wall_following.hpp"
+
+namespace exploration {
 
 class Sgba {
 
@@ -35,6 +36,6 @@ private:
   WallFollowing wallFollowingMultirangerOnboard_;
 };
 
-} // namespace sgba
+} // namespace exploration
 
 #endif /* SGBA_HPP */

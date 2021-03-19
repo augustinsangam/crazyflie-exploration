@@ -1,10 +1,11 @@
 #ifndef WALL_FOLLOWING_WITH_AVOID_HPP
 #define WALL_FOLLOWING_WITH_AVOID_HPP
 
-#include "wall_following.hpp"
 #include <cstdint>
 
-namespace sgba {
+#include "wall_following.hpp"
+
+namespace exploration {
 
 class WallFollowingWithAvoid {
 
@@ -29,5 +30,5 @@ private:
   WallFollowing wallFollowing_;
 };
 
-} // namespace sgba
+} // namespace exploration
 #endif /* WALL_FOLLOWING_WITH_AVOID_HPP */

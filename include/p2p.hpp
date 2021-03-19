@@ -3,7 +3,7 @@
 
 #include <cstdint>
 
-namespace sgba {
+namespace exploration {
 
 #define P2P_MAX_DATA_SIZE 60
 
@@ -21,6 +21,6 @@ typedef struct _P2PPacket {
 
 typedef void (*P2PCallback)(P2PPacket *);
 
-} // namespace sgba
+} // namespace exploration
 
 #endif /* P2P_HPP */

@@ -1,9 +1,9 @@
 #ifndef WALL_FOLLOWING_HPP
 #define WALL_FOLLOWING_HPP
-#include <stdbool.h>
-#include <stdint.h>
 
-namespace sgba {
+#include <cstdint>
+
+namespace exploration {
 
 class WallFollowing {
 
@@ -37,5 +37,5 @@ private:
   float state_start_time_;
 };
 
-} // namespace sgba
+} // namespace exploration
 #endif /* WALL_FOLLOWING_HPP */
