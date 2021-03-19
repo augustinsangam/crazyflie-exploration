@@ -1,14 +1,18 @@
-#include <cmath>
+#include <algorithm> /* std::max_element */
+#include <array>
+#include <cmath> /* std::atan2, std::cos, std::fabs, std::float_t, std::sin, std::sqrt */
 #include <cstddef> /* std::size_t */
-#include <cstdint>
+#include <cstdint> /* std::[u]int*_t */
 #include <cstdlib>
 
 #include "math_supp.hpp"
 #include "porting.hpp"
 #include "sgba.hpp"
 
+using F = std::float_t;
+
 int exploration::Sgba::transition(int new_state) {
-	state_start_time_ = static_cast<float>(porting::us_timestamp()) / 1e6F;
+	state_start_time_ = static_cast<F>(porting::us_timestamp()) / F(1e6);
 
 	return new_state;
 }
@@ -23,17 +27,8 @@ static bool logic_is_close_to(float real_value, float checked_value,
 // Command functions
 static void command_turn(float *vel_w, float max_rate) { *vel_w = max_rate; }
 
-uint8_t max_value(const uint8_t *myArray, std::size_t size) {
-	/* enforce the contract */
-	// assert(myArray && size);
-	uint8_t maxValue = myArray[0];
-
-	for (std::size_t i = 1; i < size; ++i) {
-		if (myArray[i] > maxValue) {
-			maxValue = myArray[i];
-		}
-	}
-	return maxValue;
+static std::uint8_t max_value(const std::uint8_t *arr, std::size_t size) {
+	return *std::max_element(arr, arr + size);
 }
 
 static float fill_heading_array(std::uint8_t *correct_heading_array,
@@ -41,17 +36,17 @@ static float fill_heading_array(std::uint8_t *correct_heading_array,
                                 int max_meters) {
 
 	// Heading array of action choices
-	static float heading_array[] = {-135.0F, -90.0F, -45.0F, 0.0F,
-	                                45.0F,   90.0F,  135.0F, 180.0F};
+	static constexpr std::array<F, 8> heading_array{
+	    -135.0F, -90.0F, -45.0F, 0.0F, 45.0F, 90.0F, 135.0F, 180.0F};
 	float rssi_heading_deg = rad_to_deg(rssi_heading);
 
 	for (std::size_t it = 0; it < 8; ++it) {
 
 		// Fill array based on heading and rssi heading
-		if ((rssi_heading_deg >= heading_array[it] - 22.5f &&
-		     rssi_heading_deg < heading_array[it] + 22.5f && it != 7) ||
-		    (it == 7 && (rssi_heading_deg >= heading_array[it] - 22.5f ||
-		                 rssi_heading_deg < -135.0f - 22.5f))) {
+		if ((rssi_heading_deg >= heading_array.at(it) - F(22.5) &&
+		     rssi_heading_deg < heading_array.at(it) + F(22.5) && it != 7) ||
+		    (it == 7 && (rssi_heading_deg >= heading_array.at(it) - F(22.5) ||
+		                 rssi_heading_deg < F(-135) - F(22.5)))) {
 			uint8_t temp_value_forward = correct_heading_array[it];
 			uint8_t temp_value_backward = correct_heading_array[(it + 4) % 8];
 
@@ -95,9 +90,9 @@ static float fill_heading_array(std::uint8_t *correct_heading_array,
 
 	for (std::size_t it = 0; it < 8; ++it) {
 		if (correct_heading_array[it] > 0) {
-			auto d = deg_to_rag(heading_array[it]);
-			x_part += correct_heading_array[it] * std::cos(d);
-			y_part += correct_heading_array[it] * std::sin(d);
+			auto d = deg_to_rag(heading_array.at(it));
+			x_part += static_cast<F>(correct_heading_array[it]) * std::cos(d);
+			y_part += static_cast<F>(correct_heading_array[it]) * std::sin(d);
 
 			// sum += heading_array[it];
 			count += correct_heading_array[it];
@@ -141,9 +136,9 @@ int exploration::Sgba::sgba_controller(
 	// static float pos_x_move = 0;
 	// static float pos_y_move = 0;
 	static bool overwrite_and_reverse_direction = false;
-	static float direction = 1;
+	static std::int_fast8_t direction = 1;
 	static bool cannot_go_to_goal = false;
-	static uint8_t prev_rssi = 150;
+	static std::uint8_t prev_rssi = 150;
 	static int diff_rssi = 0;
 	static bool rssi_sample_reset = false;
 	static float heading_rssi = 0;
@@ -162,12 +157,12 @@ int exploration::Sgba::sgba_controller(
 		overwrite_and_reverse_direction = false;
 		state = 2;
 
-		state_start_time_ = porting::us_timestamp() / 1e6;
+		state_start_time_ = static_cast<F>(porting::us_timestamp()) / F(1e6);
 		first_run_ = false;
 	}
 
 	if (first_time_inbound) {
-		wrap_to_pi(wanted_angle_ - pi<float>);
+		wrap_to_pi(wanted_angle_ - pi<F>);
 		wanted_angle_dir = wrap_to_pi(current_heading - wanted_angle_);
 		state = transition(2);
 		first_time_inbound = false;
@@ -190,17 +185,16 @@ int exploration::Sgba::sgba_controller(
 
 			// if looping is detected, reverse direction (only on outbound)
 			if (overwrite_and_reverse_direction) {
-				direction = -1.0F * direction;
+				direction *= -1;
 				overwrite_and_reverse_direction = false;
 			} else {
 				if (left_range < right_range && left_range < 2.0F) {
-					direction = -1.0F;
+					direction = -1;
 				} else if (left_range > right_range && right_range < 2.0F) {
-					direction = 1.0F;
+					direction = 1;
 
 				} else if (left_range > 2.0F && right_range > 2.0F) {
-					direction = 1.0F;
-				} else {
+					direction = 1;
 				}
 			}
 
@@ -276,7 +270,7 @@ int exploration::Sgba::sgba_controller(
 		// if(outbound)
 		//{
 
-		if (std::fabs(wrap_to_pi(wanted_angle_hit + pi<float> - loop_angle)) <
+		if (std::fabs(wrap_to_pi(wanted_angle_hit + pi<F> - loop_angle)) <
 		    1.0) {
 			overwrite_and_reverse_direction = true;
 		} else {
@@ -317,7 +311,8 @@ int exploration::Sgba::sgba_controller(
 				if (distance > 1.0F) {
 					rssi_sample_reset = true;
 					heading_rssi = current_heading;
-					int diff_rssi_unf = (int)prev_rssi - (int)rssi_beacon;
+					int diff_rssi_unf = static_cast<int>(prev_rssi) -
+					                    static_cast<int>(rssi_beacon);
 
 					// rssi already gets filtered at the radio_link.c
 					diff_rssi = diff_rssi_unf;
