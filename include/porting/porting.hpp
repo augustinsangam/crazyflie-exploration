@@ -37,7 +37,7 @@ void ticks_delay(uint32_t nTicksToDelay);
 uint32_t ms_to_ticks(uint16_t ms);
 void commander_set_setpoint(exploration::setpoint_t *setpoint, int priority);
 void estimator_kalman_get_estimated_pos(exploration::point_t *pos);
-bool radiolinkSendP2PPacketBroadcast(exploration::P2PPacket *p2pp);
+bool send_p2p_packet_broadcast(exploration::P2PPacket *p2pp);
 
 uint8_t get_deck_bc_multiranger();
 uint8_t get_deck_bc_flow2();
