@@ -79,7 +79,7 @@ static int32_t find_minimum(uint8_t a[], int32_t n) {
   return index;
 }
 
-void exploration::wall_following_controller::iteration_loop() {
+void exploration::StateMachine::iteration_loop() {
   static struct MedianFilterFloat medFilt;
   init_median_filter_f(&medFilt, 5);
   static struct MedianFilterFloat medFilt_2;
@@ -87,7 +87,7 @@ void exploration::wall_following_controller::iteration_loop() {
   static struct MedianFilterFloat medFilt_3;
   init_median_filter_f(&medFilt_3, 13);
   // p2p_register_cb(p2pCallbackHandler);
-  uint64_t address = exploration::config_block_get_radio_address();
+  uint64_t address = porting::config_block_get_radio_address();
   uint8_t my_id = (uint8_t)((address)&0x00000000ff);
   static exploration::P2PPacket p_reply;
   p_reply.port = 0x00;
@@ -105,12 +105,12 @@ void exploration::wall_following_controller::iteration_loop() {
   static bool outbound = true;
 #endif
 
-  exploration::system_wait_start();
-  exploration::ticks_delay(exploration::ms_to_ticks(3000));
+  porting::system_wait_start();
+  porting::ticks_delay(porting::ms_to_ticks(3000));
 
   while (1) {
     // some delay before the whole thing starts
-    exploration::ticks_delay(TICKS_PER_FSM_LOOP);
+    porting::ticks_delay(TICKS_PER_FSM_LOOP);
     // For every 1 second, reset the RSSI value to high if it hasn't been
     // received for a while
     for (uint8_t it = 0; it < 9; it++)
@@ -130,31 +130,31 @@ void exploration::wall_following_controller::iteration_loop() {
         (uint8_t)update_median_filter_f(&medFilt_2, (float)rssi_inter_closest);
 
     // checking init of multiranger and flowdeck
-    uint8_t multiranger_isinit = exploration::get_deck_bc_multiranger();
-    uint8_t flowdeck_isinit = exploration::get_deck_bc_flow2();
+    uint8_t multiranger_isinit = porting::get_deck_bc_multiranger();
+    uint8_t flowdeck_isinit = porting::get_deck_bc_flow2();
 
     // get current height and heading
-    height = exploration::get_kalman_state_z();
-    float heading_deg = exploration::get_stabilizer_yaw();
+    height = porting::get_kalman_state_z();
+    float heading_deg = porting::get_stabilizer_yaw();
     heading_rad = heading_deg * (float)M_PI / 180.0f;
 
     // t RSSI of beacon
-    rssi_beacon = exploration::get_radio_rssi();
+    rssi_beacon = porting::get_radio_rssi();
     rssi_beacon_filtered =
         (uint8_t)update_median_filter_f(&medFilt_3, (float)rssi_beacon);
 
     // Select which laser range sensor readings to use
     if (multiranger_isinit) {
-      front_range = exploration::get_front_range() / 1000.0f;
-      right_range = exploration::get_right_range() / 1000.0f;
-      left_range = exploration::get_left_range() / 1000.0f;
-      back_range = exploration::get_back_range() / 1000.0f;
-      up_range = exploration::get_up_range() / 1000.0f;
+      front_range = porting::get_front_range() / 1000.0f;
+      right_range = porting::get_right_range() / 1000.0f;
+      left_range = porting::get_left_range() / 1000.0f;
+      back_range = porting::get_back_range() / 1000.0f;
+      up_range = porting::get_up_range() / 1000.0f;
     }
 
     // Get position estimate of kalman filter
     exploration::point_t pos;
-    estimator_kalman_get_estimated_pos(&pos); // TODO : Position of the drone
+    porting::estimator_kalman_get_estimated_pos(&pos); // TODO : Position of the drone
 
     // Initialize setpoint
     memset(&setpoint_BG, 0, sizeof(setpoint_BG));
@@ -313,11 +313,11 @@ void exploration::wall_following_controller::iteration_loop() {
     }
 
 #endif
-    commander_set_setpoint(&setpoint_BG, STATE_MACHINE_COMMANDER_PRI);
+    porting::commander_set_setpoint(&setpoint_BG, STATE_MACHINE_COMMANDER_PRI);
   }
 }
 
-void exploration::wall_following_controller::p2pCallbackHandler(P2PPacket *p) {
+void exploration::StateMachine::p2pCallbackHandler(P2PPacket *p) {
   id_inter_ext = p->data[0];
 
   if (id_inter_ext == 0x63) {
