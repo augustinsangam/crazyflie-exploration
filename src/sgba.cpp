@@ -5,9 +5,9 @@
 #include <cstdint> /* std::[u]int*_t */
 #include <cstdlib>
 
+#include "exploration/sgba.hpp"
 #include "math_supp.hpp"
-#include "porting.hpp"
-#include "sgba.hpp"
+#include "porting/porting.hpp"
 
 using F = std::float_t;
 

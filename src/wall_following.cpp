@@ -1,8 +1,8 @@
 #include <cmath>
 
+#include "exploration/wall_following.hpp"
 #include "math_supp.hpp"
-#include "porting.hpp"
-#include "wall_following.hpp"
+#include "porting/porting.hpp"
 
 void exploration::WallFollowing::wall_follower_init(
     float new_ref_distance_from_wall, float max_speed_ref, int init_state) {

@@ -1,7 +1,7 @@
 #include <cmath>
 
-#include "porting.hpp"
-#include "wall_following_with_avoid.hpp"
+#include "exploration/wall_following_with_avoid.hpp"
+#include "porting/porting.hpp"
 
 int exploration::WallFollowingWithAvoid::transition(int new_state) {
 	float t = porting::us_timestamp() / 1e6;

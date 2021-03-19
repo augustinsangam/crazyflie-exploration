@@ -3,8 +3,8 @@
 
 #include <cstdint>
 
-#include "p2p.hpp"
-#include "stabilizer_types.hpp"
+#include "exploration/p2p.hpp"
+#include "exploration/stabilizer_types.hpp"
 
 #ifndef TICKS_PER_FSM_LOOP
 #	error "Macro `TICKS_PER_FSM_LOOP` is required"

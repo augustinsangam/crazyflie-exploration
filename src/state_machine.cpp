@@ -2,9 +2,9 @@
 #include <cmath>
 #include <cstring>
 
+#include "exploration/state_machine.hpp"
 #include "math_supp.hpp"
-#include "porting.hpp"
-#include "state_machine.hpp"
+#include "porting/porting.hpp"
 
 #define STATE_MACHINE_COMMANDER_PRI 3
 
