@@ -1,5 +1,6 @@
 #include <cmath>
 
+#include "math_supp.hpp"
 #include "porting.hpp"
 #include "wall_following.hpp"
 
@@ -19,17 +20,6 @@ static bool logic_is_close_to(float real_value, float checked_value,
 		return true;
 	} else {
 		return false;
-	}
-}
-
-static float wrap_to_pi(float number) {
-
-	if (number > (float)M_PI) {
-		return (number - (float)(2 * M_PI));
-	} else if (number < (float)(-1 * M_PI)) {
-		return (number + (float)(2 * M_PI));
-	} else {
-		return (number);
 	}
 }
 
