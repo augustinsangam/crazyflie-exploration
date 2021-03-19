@@ -16,7 +16,7 @@ class StateMachine {
 public:
 	void startup();
 	void iteration_loop();
-	void p2pCallbackHandler(P2PPacket *p);
+	void p2p_callback_handler(P2PPacket *p);
 
 private:
 	bool keep_flying_ = false;
