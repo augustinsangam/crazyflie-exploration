@@ -23,32 +23,32 @@ private:
 	float height_;
 	bool taken_off_ = false;
 	float nominal_height_ = 0.3;
-	uint8_t rssi_inter_;
-	uint8_t rssi_inter_filtered_;
-	uint8_t rssi_inter_closest_;
-	float rssi_angle_inter_ext_;
-	float rssi_angle_inter_closest_;
-	uint8_t rssi_beacon_;
-	uint8_t rssi_beacon_filtered_;
-	uint8_t id_inter_ext_;
-	exploration::setpoint_t setpoint_BG_;
-	float vel_x_cmd_, vel_y_cmd_, vel_w_cmd_;
-	float heading_rad_;
-	float right_range_;
-	float front_range_;
-	float left_range_;
-	float up_range_;
-	float back_range_;
-	float rssi_angle_;
-	int state_;
+	uint8_t rssi_inter_ = 0;
+	uint8_t rssi_inter_filtered_ = 0;
+	uint8_t rssi_inter_closest_ = 0;
+	float rssi_angle_inter_ext_ = 0;
+	float rssi_angle_inter_closest_ = 0;
+	uint8_t rssi_beacon_ = 0;
+	uint8_t rssi_beacon_filtered_ = 0;
+	uint8_t id_inter_ext_ = 0;
+	exploration::setpoint_t setpoint_BG_ = {0};
+	float vel_x_cmd_, vel_y_cmd_, vel_w_cmd_ = 0;
+	float heading_rad_ = 0;
+	float right_range_ = 0;
+	float front_range_ = 0;
+	float left_range_ = 0;
+	float up_range_ = 0;
+	float back_range_ = 0;
+	float rssi_angle_ = 0;
+	int state_ = 0;
 #if EXPLORATION_METHOD == 3
-	int state_wf_;
+	int state_wf_ = 0;
 #endif
-	float up_range_filtered_;
-	int varid_;
+	float up_range_filtered_ = 0;
+	int varid_ = 0;
 	bool on_the_ground_ = true;
-	bool correctly_initialized_;
-	uint8_t rssi_array_other_drones_[9] = {150, 150, 150, 150, 150};
+	bool correctly_initialized_ = false;
+	uint8_t rssi_array_other_drones_[9] = {150, 150, 150, 150, 150, 150, 150, 150, 150};
 	uint64_t time_array_other_drones_[9] = {0};
 	float rssi_angle_array_other_drones_[9] = {500.0f};
 	uint8_t id_inter_closest_ = 100;
@@ -57,7 +57,7 @@ private:
 	MedianFilterFloat medFilt_2;
 	MedianFilterFloat medFilt_3;
 	uint8_t my_id;
-	P2PPacket p_reply;
+	P2PPacket p_reply = {0};
 
 #if EXPLORATION_METHOD != 1
 	uint64_t radioSendBroadcastTime = 0;
