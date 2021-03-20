@@ -303,7 +303,7 @@ void exploration::StateMachine::iteration_loop() {
 
 #if EXPLORATION_METHOD != 1
 	if (porting::us_timestamp() >= radioSendBroadcastTime + 1000 * 500) {
-		exploration::radiolinkSendP2PPacketBroadcast(&p_reply);
+		exploration::send_p2p_packet_broadcast(&p_reply);
 		radioSendBroadcastTime = porting::us_timestamp();
 	}
 
@@ -311,7 +311,7 @@ void exploration::StateMachine::iteration_loop() {
 	porting::commander_set_setpoint(&setpoint_BG_, STATE_MACHINE_COMMANDER_PRI);
 }
 
-void exploration::StateMachine::p2pCallbackHandler(P2PPacket *p) {
+void exploration::StateMachine::p2p_callback_handler(P2PPacket *p) {
 	id_inter_ext_ = p->data[0];
 
 	if (id_inter_ext_ == 0x63) {
