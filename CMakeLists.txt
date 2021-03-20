@@ -13,7 +13,8 @@ target_compile_definitions(exploration PUBLIC
 	EXPLORATION_METHOD=1
 	TICKS_PER_FSM_LOOP=10)
 target_sources(exploration PRIVATE
-	"./src/sgba.cpp"
+	#"./src/sgba.cpp"
 	"./src/state_machine.cpp"
 	"./src/wall_following.cpp"
-	"./src/wall_following_with_avoid.cpp")
+	#"./src/wall_following_with_avoid.cpp"
+	)

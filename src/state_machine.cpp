@@ -121,7 +121,7 @@ void exploration::StateMachine::iteration_loop() {
 	// get current height and heading
 	height_ = porting::get_kalman_state_z();
 	float heading_deg = porting::get_stabilizer_yaw();
-	heading_rad_ = deg_to_rag(heading_deg);
+	heading_rad_ = heading_deg * 3.14159F / 180.0f; // TODO: deg_to_rag(heading_deg);
 
 	// t RSSI of beacon
 	rssi_beacon_ = porting::get_radio_rssi();
@@ -182,7 +182,7 @@ void exploration::StateMachine::iteration_loop() {
 
 #if EXPLORATION_METHOD == 1 // WALL_FOLLOWING
 			// wall following state machine
-			state_ = exploration_controller_.wall_follower(
+			state_ = exploration_controller_.wall_follower( // TODO: check
 			    &vel_x_cmd_, &vel_y_cmd_, &vel_w_cmd_, front_range_,
 			    right_range_, heading_rad_, 1);
 #endif
@@ -216,7 +216,7 @@ void exploration::StateMachine::iteration_loop() {
 #endif
 
 			// convert yaw rate commands to degrees
-			float vel_w_cmd_convert = rad_to_deg(vel_w_cmd_);
+			float vel_w_cmd_convert = vel_w_cmd_ * 180.0F / 3.14159F; // TODO: rad_to_deg(vel_w_cmd_);
 
 			vel_command(&setpoint_BG_, vel_x_cmd_, vel_y_cmd_,
 			            vel_w_cmd_convert, nominal_height_);

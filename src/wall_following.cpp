@@ -23,6 +23,19 @@ static bool logic_is_close_to(float real_value, float checked_value,
 	}
 }
 
+static float wrap_to_pi(float number)
+{
+
+  if (number > (float)M_PI) {
+    return (number - (float)(2 * M_PI));
+  } else if (number < (float)(-1 * M_PI)) {
+    return (number + (float)(2 * M_PI));
+  } else {
+    return (number);
+  }
+
+}
+
 void exploration::WallFollowing::command_turn(float *vel_x, float *vel_w,
                                               float ref_rate) {
 	*vel_x = 0.0;
