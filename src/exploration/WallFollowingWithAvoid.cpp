@@ -1,26 +1,30 @@
-#include <cmath>
+/*
+ * wallfollowing_with_avoid.c
+ *
+ *  Created on: Nov 12, 2018
+ *      Author: knmcguire
+ */
 
-#include "exploration/wall_following_with_avoid.hpp"
-#include "porting/porting.hpp"
+#include "exploration/WallFollowingWithAvoid.hpp"
+#include "porting.hpp"
 
-int exploration::WallFollowingWithAvoid::transition(int new_state) {
-	float t = porting::us_timestamp() / 1e6;
-	state_start_time_ = t;
+static int transition(int new_state, float *state_start_time) {
+	*state_start_time =
+	    static_cast<float>(static_cast<double>(porting::timestamp_us()) / 1e6);
 	return new_state;
 }
 
 // statemachine functions
-void exploration::WallFollowingWithAvoid::
-    init_wall_follower_and_avoid_controller(float new_ref_distance_from_wall,
-                                            float max_speed_ref,
-                                            float starting_local_direction) {
-	ref_distance_from_wall = new_ref_distance_from_wall;
+void exploration::WallFollowingWithAvoid::init(float new_ref_distance_from_wall,
+                                               float max_speed_ref,
+                                               float starting_local_direction) {
+	ref_distance_from_wall_ = new_ref_distance_from_wall;
 	max_speed_ = max_speed_ref;
 	local_direction_ = starting_local_direction;
 	first_run_ = true;
 }
 
-int exploration::WallFollowingWithAvoid::wall_follower_and_avoid_controller(
+int exploration::WallFollowingWithAvoid::controller(
     float *vel_x, float *vel_y, float *vel_w, float front_range,
     float left_range, float right_range, float current_heading,
     uint8_t rssi_other_drone) {
@@ -32,8 +36,8 @@ int exploration::WallFollowingWithAvoid::wall_follower_and_avoid_controller(
 	// if it is reinitialized
 	if (first_run_) {
 		state = 1;
-		float t = porting::us_timestamp() / 1e6;
-		state_start_time_ = t;
+		state_start_time_ = static_cast<float>(
+		    static_cast<double>(porting::timestamp_us()) / 1e6);
 		first_run_ = false;
 	}
 
@@ -50,18 +54,17 @@ int exploration::WallFollowingWithAvoid::wall_follower_and_avoid_controller(
 
 	if (state == 1) { // FORWARD
 		// if front range is close, start wallfollowing
-		if (front_range < ref_distance_from_wall + 0.2f) {
-			wallFollowing_.wall_follower_init(ref_distance_from_wall, 0.5, 3);
-			state = transition(2); // wall_following
+		if (front_range < ref_distance_from_wall_ + 0.2F) {
+			wf_.init(ref_distance_from_wall_, max_speed_, 3);
+			state = transition(2, &state_start_time_); // wall_following
 		}
 	} else if (state == 2) { // WALL_FOLLOWING
-
 		if (rssi_other_drone < rssi_collision_threshold) {
-			state = transition(3);
+			state = transition(3, &state_start_time_);
 		}
 	} else if (state == 3) { // MOVE_OUT_OF_WAY
 		if (rssi_other_drone > rssi_collision_threshold) {
-			state = transition(1);
+			state = transition(1, &state_start_time_);
 		}
 	}
 	/***********************************************************
@@ -79,25 +82,23 @@ int exploration::WallFollowingWithAvoid::wall_follower_and_avoid_controller(
 	} else if (state == 2) { // WALL_FOLLOWING
 		// Get the values from the wallfollowing
 		if (local_direction_ == 1) {
-			wallFollowing_.wall_follower(&temp_vel_x, &temp_vel_y, &temp_vel_w,
-			                             front_range, right_range,
-			                             current_heading, local_direction_);
+			wf_.controller(&temp_vel_x, &temp_vel_y, &temp_vel_w, front_range,
+			               right_range, current_heading, local_direction_);
 		} else if (local_direction_ == -1) {
-			wallFollowing_.wall_follower(&temp_vel_x, &temp_vel_y, &temp_vel_w,
-			                             front_range, left_range,
-			                             current_heading, local_direction_);
+			wf_.controller(&temp_vel_x, &temp_vel_y, &temp_vel_w, front_range,
+			               left_range, current_heading, local_direction_);
 		}
 	} else if (state == 3) { // MOVE_OUT_OF_WAY
 
-		float save_distance = 0.7f;
+		float save_distance = 0.7F;
 		if (left_range < save_distance) {
-			temp_vel_y = temp_vel_y - 0.5f;
+			temp_vel_y = temp_vel_y - 0.5F;
 		}
 		if (right_range < save_distance) {
-			temp_vel_y = temp_vel_y + 0.5f;
+			temp_vel_y = temp_vel_y + 0.5F;
 		}
 		if (front_range < save_distance) {
-			temp_vel_x = temp_vel_x - 0.5f;
+			temp_vel_x = temp_vel_x - 0.5F;
 		}
 	}
 

@@ -6,24 +6,24 @@ if(NOT DEFINED EXPLORATION_DEP)
 	set(CMAKE_CXX_STANDARD_REQUIRED ON)
 	set(CMAKE_CXX_EXTENSIONS OFF)
 
-	set(EXPLORATION_METHOD "1")
+	set(METHOD "1")
 	set(TICKS_PER_FSM_LOOP "10")
 endif()
 
-if(NOT DEFINED EXPLORATION_METHOD)
-	message(FATAL_ERROR "Please define EXPLORATION_METHOD")
+if(NOT DEFINED METHOD)
+	message(FATAL_ERROR "Please define METHOD")
 elseif(NOT DEFINED TICKS_PER_FSM_LOOP)
 	message(FATAL_ERROR "Please define TICKS_PER_FSM_LOOP")
 endif()
 
 add_library(exploration STATIC)
-target_include_directories(exploration PUBLIC ./include)
+target_include_directories(exploration PUBLIC "./include")
 target_compile_definitions(exploration PUBLIC
-	EXPLORATION_METHOD=${EXPLORATION_METHOD}
+	METHOD=${METHOD}
 	TICKS_PER_FSM_LOOP=${TICKS_PER_FSM_LOOP})
 target_sources(exploration PRIVATE
-	#"./src/sgba.cpp"
-	"./src/state_machine.cpp"
-	"./src/wall_following.cpp"
-	#"./src/wall_following_with_avoid.cpp"
-	)
+	"./src/exploration/SGBA.cpp"
+	"./src/exploration/StateMachine.cpp"
+	"./src/exploration/WallFollowing.cpp"
+	"./src/exploration/WallFollowingWithAvoid.cpp"
+	"./src/exploration/median_filter.cpp")
