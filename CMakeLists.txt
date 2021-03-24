@@ -6,12 +6,12 @@ if(NOT DEFINED EXPLORATION_DEP)
 	set(CMAKE_CXX_STANDARD_REQUIRED ON)
 	set(CMAKE_CXX_EXTENSIONS OFF)
 
-	set(METHOD "1")
+	set(EXPLORATION_METHOD "1")
 	set(TICKS_PER_FSM_LOOP "10")
 endif()
 
-if(NOT DEFINED METHOD)
-	message(FATAL_ERROR "Please define METHOD")
+if(NOT DEFINED EXPLORATION_METHOD)
+	message(FATAL_ERROR "Please define EXPLORATION_METHOD")
 elseif(NOT DEFINED TICKS_PER_FSM_LOOP)
 	message(FATAL_ERROR "Please define TICKS_PER_FSM_LOOP")
 endif()
@@ -19,7 +19,7 @@ endif()
 add_library(exploration STATIC)
 target_include_directories(exploration PUBLIC "./include")
 target_compile_definitions(exploration PUBLIC
-	METHOD=${METHOD}
+	EXPLORATION_METHOD=${EXPLORATION_METHOD}
 	TICKS_PER_FSM_LOOP=${TICKS_PER_FSM_LOOP})
 target_sources(exploration PRIVATE
 	"./src/exploration/SGBA.cpp"

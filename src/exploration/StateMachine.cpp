@@ -68,7 +68,7 @@ void StateMachine::init() {
 	auto address = porting::config_block_radio_address();
 	my_id = static_cast<uint8_t>(address & 0x00000000FFU);
 
-#if METHOD != 1
+#if EXPLORATION_METHOD != 1
 	p_reply.port = 0x00;                                           // NOLINT
 	p_reply.data[0] = my_id;                                       // NOLINT
 	std::memcpy(&p_reply.data[1], &rssi_angle, sizeof rssi_angle); // NOLINT
@@ -101,7 +101,7 @@ void StateMachine::step() {
 	    std::min_element(begin, rssi_array_other_drones.end()) - begin);
 	auto rssi_inter_closest = rssi_array_other_drones.at(id_inter_closest);
 
-#if METHOD == 3
+#if EXPLORATION_METHOD == 3
 	auto rssi_angle_inter_closest =
 	    rssi_angle_array_other_drones.at(id_inter_closest);
 #endif
@@ -118,7 +118,7 @@ void StateMachine::step() {
 	float heading_deg = porting::stabilizer_yaw();
 	auto heading_rad = deg_to_rad(heading_deg);
 
-#if METHOD == 3
+#if EXPLORATION_METHOD == 3
 	rssi_beacon = porting::radio_rssi();
 	auto rssi_beacon_filtered = static_cast<uint8_t>(
 	    update_median_filter_f(&medFilt_3, static_cast<float>(rssi_beacon)));
@@ -151,7 +151,7 @@ void StateMachine::step() {
 		correctly_initialized = true;
 	}
 
-#if METHOD == 3
+#if EXPLORATION_METHOD == 3
 	uint8_t rssi_beacon_threshold = 41;
 	if (keep_flying &&
 	    (!correctly_initialized || up_range < 0.2F ||
@@ -180,11 +180,11 @@ void StateMachine::step() {
 
 			hover(&setpoint_BG, nominal_height);
 
-#if METHOD == 1
+#if EXPLORATION_METHOD == 1
 			state = exploration_controller_.controller(
 			    &vel_x_cmd, &vel_y_cmd, &vel_w_cmd, front_range, right_range,
 			    heading_rad, 1);
-#elif METHOD == 2
+#elif EXPLORATION_METHOD == 2
 			if (id_inter_closest > my_id) {
 				rssi_inter_filtered = 140;
 			}
@@ -192,7 +192,7 @@ void StateMachine::step() {
 			state = exploration_controller_.controller(
 			    &vel_x_cmd, &vel_y_cmd, &vel_w_cmd, front_range, left_range,
 			    right_range, heading_rad, rssi_inter_filtered);
-#elif METHOD == 3
+#elif EXPLORATION_METHOD == 3
 			bool priority = false;
 			priority = id_inter_closest > my_id;
 			state = exploration_controller_.controller(
@@ -231,16 +231,16 @@ void StateMachine::step() {
 				if (height > nominal_height) {
 					taken_off = true;
 
-#if METHOD == 1 // wall following
+#if EXPLORATION_METHOD == 1 // wall following
                 // exploration_controller_.init(0.4F, 0.5F, 1);
 					exploration_controller_.init(0.4F, 0.5, 1);
-#elif METHOD == 2 // wallfollowing with avoid
+#elif EXPLORATION_METHOD == 2 // wallfollowing with avoid
 					if (my_id % 2 == 1) {
 						exploration_controller_.init(0.4F, 0.5, -1);
 					} else {
 						exploration_controller_.init(0.4F, 0.5, 1);
 					}
-#elif METHOD == 3 // Swarm Gradient Bug Algorithm
+#elif EXPLORATION_METHOD == 3 // Swarm Gradient Bug Algorithm
 					if (my_id == 4 || my_id == 8) {
 						exploration_controller_.init(0.4F, 0.5, -0.8F);
 					} else if (my_id == 2 || my_id == 6) {
@@ -287,7 +287,7 @@ void StateMachine::step() {
 		}
 	}
 
-#if METHOD != 1
+#if EXPLORATION_METHOD != 1
 	if (porting::timestamp_us() >= radioSendBroadcastTime + 1000 * 500) {
 		porting::radiolink_broadcast_packet(&p_reply);
 		radioSendBroadcastTime = porting::timestamp_us();

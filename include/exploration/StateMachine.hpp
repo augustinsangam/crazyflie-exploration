@@ -7,11 +7,11 @@
 #include <array>
 #include <cstdint>
 
-#if METHOD == 1
+#if EXPLORATION_METHOD == 1
 #	include "exploration/WallFollowing.hpp"
-#elif METHOD == 2
+#elif EXPLORATION_METHOD == 2
 #	include "exploration/WallFollowingWithAvoid.hpp"
-#elif METHOD == 3
+#elif EXPLORATION_METHOD == 3
 #	include "exploration/SGBA.hpp"
 #endif
 
@@ -23,7 +23,7 @@ public:
 	void step();
 	void p2p_callback_handler(P2PPacket *p);
 	StateMachine()
-#if METHOD == 1
+#if EXPLORATION_METHOD == 1
 	    : exploration_controller_()
 #endif
 	{
@@ -46,20 +46,20 @@ private:
 	bool keep_flying = false, taken_off = false;
 	int state = 0;
 
-#if METHOD != 1
+#if EXPLORATION_METHOD != 1
 	uint64_t radioSendBroadcastTime = 0;
 	P2PPacket p_reply;
 #endif
 
-#if METHOD == 1
+#if EXPLORATION_METHOD == 1
 	bool outbound = true;
 #endif
 
-#if METHOD == 1
+#if EXPLORATION_METHOD == 1
 	WallFollowing exploration_controller_;
-#elif METHOD == 2
+#elif EXPLORATION_METHOD == 2
 	WallFollowingWithAvoid exploration_controller_;
-#elif METHOD == 3
+#elif EXPLORATION_METHOD == 3
 	SGBA exploration_controller_;
 	int state_wf_;
 	static constexpr bool outbound_{true};
