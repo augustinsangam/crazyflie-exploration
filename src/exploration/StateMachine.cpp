@@ -80,9 +80,6 @@ void StateMachine::init() {
 }
 
 void StateMachine::step() {
-	// some delay before the whole thing starts
-	porting::delay_ticks(10);
-
 	// For every 1 second, reset the RSSI value to high if it hasn't been
 	// received for a while
 	for (uint8_t it = 0; it < 9; it++) {

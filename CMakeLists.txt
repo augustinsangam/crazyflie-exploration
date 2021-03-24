@@ -7,20 +7,16 @@ if(NOT DEFINED EXPLORATION_DEP)
 	set(CMAKE_CXX_EXTENSIONS OFF)
 
 	set(EXPLORATION_METHOD "1")
-	set(TICKS_PER_FSM_LOOP "10")
 endif()
 
 if(NOT DEFINED EXPLORATION_METHOD)
 	message(FATAL_ERROR "Please define EXPLORATION_METHOD")
-elseif(NOT DEFINED TICKS_PER_FSM_LOOP)
-	message(FATAL_ERROR "Please define TICKS_PER_FSM_LOOP")
 endif()
 
 add_library(exploration STATIC)
 target_include_directories(exploration PUBLIC "./include")
 target_compile_definitions(exploration PUBLIC
-	EXPLORATION_METHOD=${EXPLORATION_METHOD}
-	TICKS_PER_FSM_LOOP=${TICKS_PER_FSM_LOOP})
+	EXPLORATION_METHOD=${EXPLORATION_METHOD})
 target_sources(exploration PRIVATE
 	"./src/exploration/SGBA.cpp"
 	"./src/exploration/StateMachine.cpp"
