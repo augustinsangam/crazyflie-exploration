@@ -65,7 +65,7 @@ void StateMachine::init() {
 	init_median_filter_f(&medFilt, 5);
 	init_median_filter_f(&medFilt_2, 5);
 	init_median_filter_f(&medFilt_3, 13);
-	auto address = porting::config_block_radio_address();
+	auto address = porting_->config_block_radio_address();
 	my_id = static_cast<uint8_t>(address & 0x00000000FFU);
 
 #if EXPLORATION_METHOD != 1
@@ -75,8 +75,8 @@ void StateMachine::init() {
 	p_reply.size = 5;
 #endif
 
-	porting::system_wait_start();
-	porting::delay_ticks(3000);
+	porting_->system_wait_start();
+	porting_->delay_ticks(3000);
 }
 
 void StateMachine::step() {
@@ -107,32 +107,32 @@ void StateMachine::step() {
 	    &medFilt_2, static_cast<float>(rssi_inter_closest)));
 
 	// checking init of multiranger and flowdeck
-	uint8_t multiranger_isinit = porting::deck_bc_multiranger();
-	uint8_t flowdeck_isinit = porting::deck_bc_flow2();
+	uint8_t multiranger_isinit = porting_->deck_bc_multiranger();
+	uint8_t flowdeck_isinit = porting_->deck_bc_flow2();
 
 	// get current height and heading
-	auto height = porting::kalman_state_z();
-	float heading_deg = porting::stabilizer_yaw();
+	auto height = porting_->kalman_state_z();
+	float heading_deg = porting_->stabilizer_yaw();
 	auto heading_rad = deg_to_rad(heading_deg);
 
 #if EXPLORATION_METHOD == 3
-	rssi_beacon = porting::radio_rssi();
+	rssi_beacon = porting_->radio_rssi();
 	auto rssi_beacon_filtered = static_cast<uint8_t>(
 	    update_median_filter_f(&medFilt_3, static_cast<float>(rssi_beacon)));
 #endif
 
 	// Select which laser range sensor readings to use
 	if (multiranger_isinit != 0) {
-		front_range = porting::range_front() / 1000.0F;
-		right_range = porting::range_right() / 1000.0F;
-		left_range = porting::range_left() / 1000.0F;
-		back_range = porting::range_back() / 1000.0F;
-		up_range = porting::range_up() / 1000.0F;
+		front_range = porting_->range_front() / 1000.0F;
+		right_range = porting_->range_right() / 1000.0F;
+		left_range = porting_->range_left() / 1000.0F;
+		back_range = porting_->range_back() / 1000.0F;
+		up_range = porting_->range_up() / 1000.0F;
 	}
 
 	// Get position estimate of kalman filter
 	point_t pos;
-	porting::kalman_estimated_pos(&pos);
+	porting_->kalman_estimated_pos(&pos);
 
 	// Initialize setpoint
 	setpoint_t setpoint_BG;
@@ -229,7 +229,7 @@ void StateMachine::step() {
 					taken_off = true;
 
 #if EXPLORATION_METHOD == 1 // wall following
-                // exploration_controller_.init(0.4F, 0.5F, 1);
+					// exploration_controller_.init(0.4F, 0.5F, 1);
 					exploration_controller_.init(0.4F, 0.5, 1);
 #elif EXPLORATION_METHOD == 2 // wallfollowing with avoid
 					if (my_id % 2 == 1) {
@@ -286,12 +286,12 @@ void StateMachine::step() {
 
 #if EXPLORATION_METHOD != 1
 	if (porting::timestamp_us() >= radioSendBroadcastTime + 1000 * 500) {
-		porting::radiolink_broadcast_packet(&p_reply);
+		porting_->radiolink_broadcast_packet(&p_reply);
 		radioSendBroadcastTime = porting::timestamp_us();
 	}
 
 #endif
-	porting::commander_set_point(&setpoint_BG, STATE_MACHINE_COMMANDER_PRI);
+	porting_->commander_set_point(&setpoint_BG, STATE_MACHINE_COMMANDER_PRI);
 }
 
 void StateMachine::p2p_callback_handler(P2PPacket *p) {

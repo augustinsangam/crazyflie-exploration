@@ -3,6 +3,7 @@
 
 #include "WallFollowing.hpp"
 #include "median_filter.hpp"
+#include "porting.hpp"
 #include "types.hpp"
 #include <array>
 #include <cstdint>
@@ -22,16 +23,12 @@ public:
 	void init();
 	void step();
 	void p2p_callback_handler(P2PPacket *p);
-	StateMachine()
-#if EXPLORATION_METHOD == 1
-	    : exploration_controller_()
-#endif
-	{
-	}
+	explicit StateMachine(porting::Porting *porting) : porting_(porting) {}
 
 private:
 	static constexpr float nominal_height = 0.3F;
 
+	porting::Porting *porting_;
 	uint8_t my_id;
 	struct MedianFilterFloat medFilt, medFilt_2, medFilt_3;
 	float rssi_angle;
