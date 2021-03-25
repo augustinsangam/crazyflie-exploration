@@ -8,13 +8,11 @@
 
 namespace porting {
 
-class Porting {
+class DroneLayer {
 public:
-	explicit Porting(void *ctx) : ctx_(ctx) {}
+	explicit DroneLayer(void *ctx) : ctx_(ctx) {}
 
 	void kalman_estimated_pos(exploration::point_t *pos);
-
-	void p2p_register_cb(void (*cb)(exploration::P2PPacket *));
 
 	void radiolink_broadcast_packet(exploration::P2PPacket *packet);
 

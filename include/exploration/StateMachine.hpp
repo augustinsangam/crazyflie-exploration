@@ -23,12 +23,12 @@ public:
 	void init();
 	void step();
 	void p2p_callback_handler(P2PPacket *p);
-	explicit StateMachine(porting::Porting *porting) : porting_(porting) {}
+	explicit StateMachine(porting::DroneLayer *porting) : porting_(porting) {}
 
 private:
 	static constexpr float nominal_height = 0.3F;
 
-	porting::Porting *porting_;
+	porting::DroneLayer *porting_;
 	uint8_t my_id;
 	struct MedianFilterFloat medFilt, medFilt_2, medFilt_3;
 	float rssi_angle;
