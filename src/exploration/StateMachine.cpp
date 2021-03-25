@@ -76,7 +76,7 @@ void StateMachine::init() {
 #endif
 
 	porting_->system_wait_start();
-	porting_->delay_ticks(3000);
+	porting_->delay_ms(EXPLORATION_DRONE_INITIALISATION_DELAY);
 }
 
 void StateMachine::step() {

@@ -18,7 +18,7 @@ public:
 
 	void system_wait_start();
 
-	void delay_ticks(uint32_t ticks);
+	void delay_ms(uint32_t ticks);
 
 	void commander_set_point(exploration::setpoint_t *sp, int prio);
 
