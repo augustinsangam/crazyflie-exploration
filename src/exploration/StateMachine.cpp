@@ -123,11 +123,11 @@ void StateMachine::step() {
 
 	// Select which laser range sensor readings to use
 	if (multiranger_isinit != 0) {
-		front_range = porting_->range_front() / 1000.0F;
-		right_range = porting_->range_right() / 1000.0F;
-		left_range = porting_->range_left() / 1000.0F;
-		back_range = porting_->range_back() / 1000.0F;
-		up_range = porting_->range_up() / 1000.0F;
+		front_range = porting_->range_front();
+		right_range = porting_->range_right();
+		left_range = porting_->range_left();
+		back_range = porting_->range_back();
+		up_range = porting_->range_up();
 	}
 
 	// Get position estimate of kalman filter
