@@ -92,10 +92,10 @@ static void command_turn_and_adjust(float *vel_y, float *vel_w, float rate,
 	*vel_y = 0;
 }
 
-static int transition(int new_state, float *state_start_time) {
-	*state_start_time =
+void exploration::WallFollowing::set_state(int state) {
+	state_start_time_ =
 	    static_cast<float>(static_cast<double>(porting::timestamp_us()) / 1e6);
-	return new_state;
+	state_ = state;
 }
 
 void exploration::WallFollowing::adjust_distance_wall(float distance_wall_new) {
@@ -139,7 +139,7 @@ int exploration::WallFollowing::controller(float *vel_x, float *vel_y,
 
 	if (state_ == 1) { // FORWARD
 		if (front_range < ref_distance_from_wall_ + 0.2F) {
-			state_ = transition(3, &state_start_time_);
+			set_state(3);
 		}
 	} else if (state_ == 2) { // HOVER
 
@@ -153,22 +153,20 @@ int exploration::WallFollowing::controller(float *vel_x, float *vel_y,
 			previous_heading = current_heading;
 			angle = direction_ *
 			        (1.57F - std::atan(front_range / side_range) + 0.1F);
-			state_ = transition(
-			    4, &state_start_time_); // go to turn_to_allign_to_wall
+			set_state(4); // go to turn_to_allign_to_wall
 		}
 		if (side_range < 1.0F && front_range > 2.0F) {
 			//  around_corner_first_turn = true;
 			around_corner_go_back = false;
 			previous_heading = current_heading;
-			state_ =
-			    transition(8, &state_start_time_); // go to rotate_around_wall
+			set_state(8); // go to rotate_around_wall
 		}
 	} else if (state_ == 4) { // TURN_TO_ALLIGN_TO_WALL
 		bool allign_wall_check = logic_is_close_to(
 		    wrap_to_pi(current_heading - previous_heading), angle, 0.1F);
 		if (allign_wall_check) {
 			// prev_side_range = side_range;
-			state_ = transition(5, &state_start_time_);
+			set_state(5);
 		}
 	} else if (state_ == 5) { // FORWARD_ALONG_WALL
 
@@ -176,18 +174,18 @@ int exploration::WallFollowing::controller(float *vel_x, float *vel_y,
 		//    end of the wall is reached
 		if (side_range > ref_distance_from_wall_ + 0.3F) {
 			//  around_corner_first_turn = true;
-			state_ = transition(8, &state_start_time_);
+			set_state(8);
 		}
 		// If front range is small
 		//    then corner is reached
 		if (front_range < ref_distance_from_wall_ + 0.2F) {
 			previous_heading = current_heading;
-			state_ = transition(7, &state_start_time_);
+			set_state(7);
 		}
 
 	} else if (state_ == 6) { // ROTATE_AROUND_WALL
 		if (front_range < ref_distance_from_wall_ + 0.2F) {
-			state_ = transition(3, &state_start_time_);
+			set_state(3);
 		}
 
 	} else if (state_ == 7) { // ROTATE_IN_CORNER
@@ -196,12 +194,12 @@ int exploration::WallFollowing::controller(float *vel_x, float *vel_y,
 		    std::fabs(wrap_to_pi(current_heading - previous_heading)), 0.8F,
 		    0.1F);
 		if (check_heading_corner) {
-			state_ = transition(3, &state_start_time_);
+			set_state(3);
 		}
 
 	} else if (state_ == 8) { // FIND_CORNER
 		if (side_range <= ref_distance_from_wall_) {
-			state_ = transition(6, &state_start_time_);
+			set_state(6);
 		}
 	}
 

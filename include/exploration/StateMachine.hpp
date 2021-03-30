@@ -20,10 +20,11 @@ namespace exploration {
 
 class StateMachine {
 public:
+	explicit StateMachine(porting::DroneLayer *porting) : porting_(porting) {}
+	inline int get_state() { return state; }
 	void init();
 	void step();
 	void p2p_callback_handler(P2PPacket *p);
-	explicit StateMachine(porting::DroneLayer *porting) : porting_(porting) {}
 
 private:
 	static constexpr float nominal_height = 0.3F;
