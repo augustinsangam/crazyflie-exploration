@@ -34,6 +34,8 @@ public:
 
 	void start_mission();
 
+	void end_mission();
+
 	void return_to_base();
 
 	void p2p_callback_handler(P2PPacket *p);

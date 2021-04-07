@@ -399,6 +399,8 @@ void StateMachine::land_robot() { state = DroneState::landing; }
 
 void StateMachine::start_mission() { state = DroneState::exploring; }
 
+void StateMachine::end_mission() { state = DroneState::landing; }
+
 void StateMachine::return_to_base() { state = DroneState::returningToBase; }
 
 void StateMachine::p2p_callback_handler(P2PPacket *p) {
