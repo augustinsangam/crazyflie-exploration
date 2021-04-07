@@ -69,6 +69,7 @@ void StateMachine::init() {
 	init_median_filter_f(&medFilt_3, 13);
 	auto address = porting_->config_block_radio_address();
 	my_id = static_cast<uint8_t>(address & 0x00000000FFU);
+	state_ = DroneState::onTheGround;
 
 #if EXPLORATION_METHOD != 1
 	p_reply.port = 0x00;                                           // NOLINT
@@ -81,77 +82,101 @@ void StateMachine::init() {
 	porting_->delay_ms(EXPLORATION_DRONE_INITIALISATION_DELAY);
 }
 
+void StateMachine::set_state(DroneState state) {
+	state_ = state;
+	porting_->debug_print("New state: %d\n", static_cast<int>(state) + 1);
+}
+
 void StateMachine::step() {
 	// Handle transitions
 
 	auto height = porting_->kalman_state_z();
 	auto batteryLevel = porting_->get_battery_level();
 
-	switch (state) {
+	switch (state_) {
 	case DroneState::onTheGround:
 	case DroneState::crashed: {
 		// Nothing to do. Can't get out of this state
 		break;
 	}
 	case DroneState::takingOff:
-		if (batteryLevel < 0.3) {
-			state = DroneState::landing;
+		if (batteryLevel < 0.3F) {
+			set_state(DroneState::landing);
 		} else if (height > nominal_height) {
-			state = DroneState::standBy;
+			set_state(DroneState::standBy);
 		}
 		break;
 	case DroneState::landing: {
-		auto height = porting_->kalman_state_z();
 		if (height < 0.1F) {
-			state = DroneState::onTheGround;
+			set_state(DroneState::onTheGround);
 		}
 		break;
 	}
 	case DroneState::exploring: {
-		if (batteryLevel < 0.3) {
-			state = DroneState::landing;
-		} else if (batteryLevel < 0.6) {
-			state = DroneState::returningToBase;
+		if (batteryLevel < 0.3F) {
+			set_state(DroneState::landing);
+		} else if (batteryLevel < 0.6F) {
+			set_state(DroneState::returningToBase);
+		}
+		bool droneCrashed = porting_->range_front() < 0.2F && height < 0.1F;
+		if (droneCrashed) {
+			set_state(DroneState::crashed);
+		}
+		bool obstacleOnTop = porting_->range_up() < 0.2F;
+		if (obstacleOnTop) {
+			set_state(DroneState::landing);
 		}
 		break;
 	}
 	case DroneState::standBy:
 	case DroneState::returningToBase: {
-		if (batteryLevel < 0.3) {
-			state = DroneState::landing;
+		if (batteryLevel < 0.3F) {
+			set_state(DroneState::landing);
+		}
+		bool droneCrashed = porting_->range_front() < 0.2F && height < 0.1F;
+		if (droneCrashed) {
+			set_state(DroneState::crashed);
+		}
+		bool obstacleOnTop = porting_->range_up() < 0.2F;
+		if (obstacleOnTop) {
+			set_state(DroneState::landing);
 		}
 		break;
 	}
 	}
 
-	bool droneCrashed = porting_->range_front() < 0.2F && height < 0.1;
-	if (droneCrashed) {
-		state = DroneState::crashed;
-	}
-
-	bool obstacleOnTop = porting_->range_up() < 0.2F;
-	if (obstacleOnTop) {
-		state = DroneState::landing;
-	}
-
 	// Handle states
 	setpoint_t setpoint_BG;
 	memset(&setpoint_BG, 0, sizeof setpoint_BG);
-	switch (state) {
-	case DroneState::onTheGround:
+	switch (state_) {
+	case DroneState::onTheGround: {
 		step_on_the_ground(&setpoint_BG);
-	case DroneState::takingOff:
+		break;
+	}
+	case DroneState::takingOff: {
 		step_taking_off(&setpoint_BG);
-	case DroneState::landing:
+		break;
+	}
+	case DroneState::landing: {
 		step_landing(&setpoint_BG);
-	case DroneState::crashed:
+		break;
+	}
+	case DroneState::crashed: {
 		step_crashed(&setpoint_BG);
-	case DroneState::exploring:
+		break;
+	}
+	case DroneState::exploring: {
 		step_exploring(&setpoint_BG);
-	case DroneState::standBy:
+		break;
+	}
+	case DroneState::standBy: {
 		step_standby(&setpoint_BG);
-	case DroneState::returningToBase:
+		break;
+	}
+	case DroneState::returningToBase: {
 		step_returning_to_base(&setpoint_BG);
+		break;
+	}
 	}
 	porting_->commander_set_point(&setpoint_BG, STATE_MACHINE_COMMANDER_PRI);
 }
@@ -168,7 +193,7 @@ void StateMachine::step_taking_off(setpoint_t *sp) {
 void StateMachine::step_landing(setpoint_t *sp) {
 	auto height = porting_->kalman_state_z();
 	if (height > 0.1F) {
-		_land(sp, 0.5F);
+		_land(sp, 0.2F);
 	}
 }
 
@@ -393,15 +418,15 @@ void StateMachine::step_exploring(setpoint_t *setpoint_BG) {
 #endif
 }
 
-void StateMachine::take_off_robot() { state = DroneState::takingOff; }
+void StateMachine::take_off_robot() { state_ = DroneState::takingOff; }
 
-void StateMachine::land_robot() { state = DroneState::landing; }
+void StateMachine::land_robot() { state_ = DroneState::landing; }
 
-void StateMachine::start_mission() { state = DroneState::exploring; }
+void StateMachine::start_mission() { state_ = DroneState::exploring; }
 
-void StateMachine::end_mission() { state = DroneState::landing; }
+void StateMachine::end_mission() { state_ = DroneState::landing; }
 
-void StateMachine::return_to_base() { state = DroneState::returningToBase; }
+void StateMachine::return_to_base() { state_ = DroneState::returningToBase; }
 
 void StateMachine::p2p_callback_handler(P2PPacket *p) {
 	auto id_inter_ext = p->data[0]; // NOLINT

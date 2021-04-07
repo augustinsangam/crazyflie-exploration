@@ -22,7 +22,7 @@ namespace exploration {
 class StateMachine {
 public:
 	explicit StateMachine(porting::DroneLayer *porting) : porting_(porting) {}
-	[[nodiscard]] inline DroneState get_state() const { return state; }
+	[[nodiscard]] inline DroneState get_state() const { return state_; }
 
 	void init();
 
@@ -41,7 +41,9 @@ public:
 	void p2p_callback_handler(P2PPacket *p);
 
 private:
-	DroneState state{DroneState::onTheGround};
+	DroneState state_{DroneState::onTheGround};
+
+	void set_state(DroneState state);
 
 	void step_on_the_ground(setpoint_t *sp);
 	void step_taking_off(setpoint_t *sp);
