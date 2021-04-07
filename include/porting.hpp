@@ -33,11 +33,15 @@ public:
 
 	float_t stabilizer_yaw();
 
-	float_t range_front();
-	float_t range_left();
-	float_t range_back();
-	float_t range_right();
-	float_t range_up();
+	float_t get_battery_level(); // Between 0 and 1
+
+	float_t range_front(); // Between 0 and 1
+	float_t range_left();  // Between 0 and 1
+	float_t range_back();  // Between 0 and 1
+	float_t range_right(); // Between 0 and 1
+	float_t range_up();    // Between 0 and 1
+
+	void debug_print(const char * fmt, ...);
 
 private:
 	void *ctx_ = nullptr;
