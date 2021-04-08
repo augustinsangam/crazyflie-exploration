@@ -26,6 +26,29 @@ void StateMachine::init() {
 	p_reply.size = 5;
 #endif
 
+#if EXPLORATION_METHOD == 1 // wall following
+	// exploration_controller_.init(0.4F, 0.5F, 1);
+	exploration_controller_.init(0.4F, 0.5, 1);
+#elif EXPLORATION_METHOD == 2 // wallfollowing with avoid
+	if (my_id % 2 == 1) {
+		exploration_controller_.init(0.4F, 0.5, -1);
+	} else {
+		exploration_controller_.init(0.4F, 0.5, 1);
+	}
+#elif EXPLORATION_METHOD == 3 // Swarm Gradient Bug Algorithm
+	if (my_id == 4 || my_id == 8) {
+		exploration_controller_.init(0.4F, 0.5, -0.8F);
+	} else if (my_id == 2 || my_id == 6) {
+		exploration_controller_.init(0.4F, 0.5, 0.8F);
+	} else if (my_id == 3 || my_id == 7) {
+		exploration_controller_.init(0.4F, 0.5, -2.4F);
+	} else if (my_id == 5 || my_id == 9) {
+		exploration_controller_.init(0.4F, 0.5, 2.4F);
+	} else {
+		exploration_controller_.init(0.4F, 0.5, 0.8F);
+	}
+#endif
+
 	porting_->system_wait_start();
 	porting_->delay_ms(EXPLORATION_DRONE_INITIALISATION_DELAY);
 }
@@ -41,56 +64,58 @@ void StateMachine::set_state(DroneState state) {
 
 void StateMachine::step() {
 	// Handle transitions
-	auto desired_state = state_;
+	auto next_state = state_;
 
 	auto height = porting_->kalman_state_z();
 	auto batteryLevel = porting_->get_battery_level();
-	auto droneCrashed = state_ == DroneState::crashed || porting_->kalman_crashed();
+	auto droneCrashed =
+	    next_state == DroneState::crashed || porting_->kalman_crashed();
 	auto obstacleOnTop = porting_->range_up() < 0.2F;
 
 	if (droneCrashed) {
-		desired_state = DroneState::crashed;
+		next_state = DroneState::crashed;
 	} else if (obstacleOnTop) {
-		desired_state = DroneState::landing;
-	} else {
-		switch (state_) {
-		case DroneState::onTheGround:
-			break;
-		case DroneState::crashed:
-			// Nothing to do. Can't get out of this state
-			porting_->debug_print("Crashed!\n");
-			break;
-		case DroneState::takingOff:
-			if (batteryLevel < 0.3F) {
-				desired_state = DroneState::landing;
-			} else if (height > nominal_height) {
-				desired_state = DroneState::standBy;
-			}
-			break;
-		case DroneState::landing:
-			if (height < 0.1F) {
-				desired_state = DroneState::onTheGround;
-			}
-			break;
-		case DroneState::exploring: {
-			if (batteryLevel < 0.3F) {
-				desired_state = DroneState::landing;
-			} else if (batteryLevel < 0.6F) {
-				desired_state = DroneState::returningToBase;
-			}
-			break;
-		}
-		case DroneState::standBy:
-		case DroneState::returningToBase: {
-			if (batteryLevel < 0.3F) {
-				desired_state = DroneState::landing;
-			}
-			break;
-		}
-		}
+		next_state = DroneState::landing;
 	}
 
-	set_state(desired_state);
+	switch (next_state) {
+	case DroneState::onTheGround:
+		break;
+	case DroneState::crashed:
+		// Nothing to do. Can't get out of this state
+		porting_->debug_print("Crashed!\n");
+		break;
+	case DroneState::takingOff:
+		if (batteryLevel < 0.3F) {
+			next_state = DroneState::landing;
+		} else if (height > nominal_height) {
+			next_state = should_start_mission_ ? DroneState::exploring
+			                                   : DroneState::standBy;
+			should_start_mission_ = false;
+		}
+		break;
+	case DroneState::landing:
+		if (height < 0.1F) {
+			next_state = DroneState::onTheGround;
+		}
+		break;
+	case DroneState::exploring:
+		if (batteryLevel < 0.3F) {
+			next_state = DroneState::landing;
+		} else if (batteryLevel < 0.6F) {
+			next_state = DroneState::returningToBase;
+		}
+		break;
+	case DroneState::standBy:
+	case DroneState::returningToBase: {
+		if (batteryLevel < 0.3F) {
+			next_state = DroneState::landing;
+		}
+		break;
+	}
+	}
+
+	set_state(next_state);
 
 	// Handle states
 	setpoint_t sp{};
@@ -99,20 +124,15 @@ void StateMachine::step() {
 		SetPoint::shut_off_engines(&sp);
 		break;
 	case DroneState::takingOff:
-		if (height < nominal_height) {
-			SetPoint::take_off(&sp, 0.5F);
-		}
+		SetPoint::take_off(&sp, 0.5F);
 		break;
 	case DroneState::landing:
-		if (height > 0.1F) {
-			SetPoint::land(&sp, 0.2F);
-		}
+		SetPoint::land(&sp, 0.2F);
 		break;
 	case DroneState::crashed:
 		SetPoint::shut_off_engines(&sp);
 		break;
 	case DroneState::exploring:
-		keep_flying = true;
 		step_exploring(&sp);
 		break;
 	case DroneState::standBy:
@@ -198,134 +218,64 @@ void StateMachine::step_exploring(setpoint_t *setpoint_BG) {
 	     (!outbound_ && rssi_beacon_filtered < rssi_beacon_threshold))) {
 		keep_flying = false;
 	}
-#else
+/*#else
 	if (keep_flying && (!correctly_initialized || up_range < 0.2F)) {
-		keep_flying = false;
+	    keep_flying = false;
 	}
+*/
 #endif
 
 	exploration_state = 0;
 
-	// Main flying code
-	if (keep_flying) {
-		if (taken_off) {
-			/*
-			 * If the flight is given a OK
-			 *  and the crazyflie has taken off
-			 *   then perform exploration_state machine
-			 */
-			float vel_w_cmd = 0;
-			float vel_x_cmd;
-			float vel_y_cmd;
+	/*
+	 * If the flight is given a OK
+	 *  and the crazyflie has taken off
+	 *   then perform exploration_state machine
+	 */
+	float vel_w_cmd = 0;
+	float vel_x_cmd;
+	float vel_y_cmd;
 
-			SetPoint::hover(setpoint_BG, nominal_height);
+	SetPoint::hover(setpoint_BG, nominal_height);
 
 #if EXPLORATION_METHOD == 1
-			exploration_state = exploration_controller_.controller(
-			    &vel_x_cmd, &vel_y_cmd, &vel_w_cmd, front_range, right_range,
-			    heading_rad, 1);
+	exploration_state = exploration_controller_.controller(
+	    &vel_x_cmd, &vel_y_cmd, &vel_w_cmd, front_range, right_range,
+	    heading_rad, 1);
 #elif EXPLORATION_METHOD == 2
-			if (id_inter_closest > my_id) {
-				rssi_inter_filtered = 140;
-			}
-
-			exploration_state = exploration_controller_.controller(
-			    &vel_x_cmd, &vel_y_cmd, &vel_w_cmd, front_range, left_range,
-			    right_range, heading_rad, rssi_inter_filtered);
-#elif EXPLORATION_METHOD == 3
-			bool priority = false;
-			priority = id_inter_closest > my_id;
-			exploration_state = exploration_controller_.controller(
-			    &vel_x_cmd, &vel_y_cmd, &vel_w_cmd, &rssi_angle, &state_wf_,
-			    front_range, left_range, right_range, back_range, heading_rad,
-			    pos.x, pos.y, rssi_beacon_filtered, rssi_inter_filtered,
-			    rssi_angle_inter_closest, priority, outbound_);
-
-			std::memcpy(&p_reply.data[1], &rssi_angle, // NOLINT
-			            sizeof rssi_angle);
-#endif
-
-			// convert yaw rate commands to degrees
-			float vel_w_cmd_convert = rad_to_deg(vel_w_cmd);
-
-			// Convert relative commands to world commands (not necessary
-			// anymore)
-			/*float psi = heading_rad;
-			float vel_x_cmd_convert =  cosf(-psi) * vel_x_cmd + sinf(-psi) *
-			vel_y_cmd; float vel_y_cmd_convert = -sinf(-psi) * vel_x_cmd +
-			cosf(-psi) * vel_y_cmd;*/
-			// float vel_y_cmd_convert = -1 * vel_y_cmd;
-			SetPoint::vel_command(setpoint_BG, vel_x_cmd, vel_y_cmd,
-			                      vel_w_cmd_convert, nominal_height);
-			// on_the_ground = false;
-		} else {
-			/*
-			 * If the flight is given a OK
-			 *  but the crazyflie  has not taken off
-			 *   then take off
-			 */
-			if (porting::timestamp_us() >=
-			    takeoffdelaytime + 1000 * 1000 * my_id) {
-
-				SetPoint::take_off(setpoint_BG, nominal_height);
-				if (height > nominal_height) {
-					taken_off = true;
-
-#if EXPLORATION_METHOD == 1 // wall following
-					// exploration_controller_.init(0.4F, 0.5F, 1);
-					exploration_controller_.init(0.4F, 0.5, 1);
-#elif EXPLORATION_METHOD == 2 // wallfollowing with avoid
-					if (my_id % 2 == 1) {
-						exploration_controller_.init(0.4F, 0.5, -1);
-					} else {
-						exploration_controller_.init(0.4F, 0.5, 1);
-					}
-#elif EXPLORATION_METHOD == 3 // Swarm Gradient Bug Algorithm
-					if (my_id == 4 || my_id == 8) {
-						exploration_controller_.init(0.4F, 0.5, -0.8F);
-					} else if (my_id == 2 || my_id == 6) {
-						exploration_controller_.init(0.4F, 0.5, 0.8F);
-					} else if (my_id == 3 || my_id == 7) {
-						exploration_controller_.init(0.4F, 0.5, -2.4F);
-					} else if (my_id == 5 || my_id == 9) {
-						exploration_controller_.init(0.4F, 0.5, 2.4F);
-					} else {
-						exploration_controller_.init(0.4F, 0.5, 0.8F);
-					}
-#endif
-				}
-				// on_the_ground = false;
-			} else {
-				SetPoint::shut_off_engines(setpoint_BG);
-				taken_off = false;
-			}
-		}
-	} else {
-		if (taken_off) {
-			/*
-			 * If the flight is given a not OK
-			 *  but the crazyflie  has already taken off
-			 *   then land
-			 */
-			SetPoint::land(setpoint_BG, 0.2F);
-			if (height < 0.1F) {
-				SetPoint::shut_off_engines(setpoint_BG);
-				taken_off = false;
-			}
-			// on_the_ground = false;
-
-		} else {
-
-			/*
-			 * If the flight is given a not OK
-			 *  and crazyflie has landed
-			 *   then keep engines off
-			 */
-			SetPoint::shut_off_engines(setpoint_BG);
-			takeoffdelaytime = porting::timestamp_us();
-			// on_the_ground = true;
-		}
+	if (id_inter_closest > my_id) {
+		rssi_inter_filtered = 140;
 	}
+
+	exploration_state = exploration_controller_.controller(
+	    &vel_x_cmd, &vel_y_cmd, &vel_w_cmd, front_range, left_range,
+	    right_range, heading_rad, rssi_inter_filtered);
+#elif EXPLORATION_METHOD == 3
+	bool priority = false;
+	priority = id_inter_closest > my_id;
+	exploration_state = exploration_controller_.controller(
+	    &vel_x_cmd, &vel_y_cmd, &vel_w_cmd, &rssi_angle, &state_wf_,
+	    front_range, left_range, right_range, back_range, heading_rad, pos.x,
+	    pos.y, rssi_beacon_filtered, rssi_inter_filtered,
+	    rssi_angle_inter_closest, priority, outbound_);
+
+	std::memcpy(&p_reply.data[1], &rssi_angle, // NOLINT
+	            sizeof rssi_angle);
+#endif
+
+	// convert yaw rate commands to degrees
+	float vel_w_cmd_convert = rad_to_deg(vel_w_cmd);
+
+	// Convert relative commands to world commands (not necessary
+	// anymore)
+	/*float psi = heading_rad;
+	float vel_x_cmd_convert =  cosf(-psi) * vel_x_cmd + sinf(-psi) *
+	vel_y_cmd; float vel_y_cmd_convert = -sinf(-psi) * vel_x_cmd +
+	cosf(-psi) * vel_y_cmd;*/
+	// float vel_y_cmd_convert = -1 * vel_y_cmd;
+	SetPoint::vel_command(setpoint_BG, vel_x_cmd, vel_y_cmd, vel_w_cmd_convert,
+	                      nominal_height);
+	// on_the_ground = false;
 
 #if EXPLORATION_METHOD != 1
 	if (porting::timestamp_us() >= radioSendBroadcastTime + 1000 * 500) {
@@ -340,7 +290,11 @@ void StateMachine::take_off_robot() { state_ = DroneState::takingOff; }
 
 void StateMachine::land_robot() { state_ = DroneState::landing; }
 
-void StateMachine::start_mission() { state_ = DroneState::exploring; }
+void StateMachine::start_mission() {
+	takeoffdelaytime = porting::timestamp_us();
+	should_start_mission_ = true;
+	state_ = DroneState::takingOff;
+}
 
 void StateMachine::end_mission() { state_ = DroneState::landing; }
 
