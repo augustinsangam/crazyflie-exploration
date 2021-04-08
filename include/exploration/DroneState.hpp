@@ -1,37 +1,25 @@
 #ifndef STATE_HPP
 #define STATE_HPP
 
+#include <cstdint>
 #include <string>
+#include <array>
 
 namespace exploration {
 
 enum class DroneState {
-	onTheGround,
-	takingOff,
-	landing,
-	crashed,
-	exploring,
-	standBy,
-	returningToBase
+	onTheGround, // 0
+	takingOff, // 1
+	landing, // 2
+	crashed, // 3
+	exploring, // 4
+	standBy, // 5
+	returningToBase // 6
 };
 
-static std::string getDroneStateName(DroneState d) {
-	switch (d) {
-	case DroneState::onTheGround:
-		return "onTheGround";
-	case DroneState::takingOff:
-		return "takingOff";
-	case DroneState::landing:
-		return "landing";
-	case DroneState::crashed:
-		return "crashed";
-	case DroneState::exploring:
-		return "exploring";
-	case DroneState::standBy:
-		return "standBy";
-	case DroneState::returningToBase:
-		return "returningToBase";
-	}
+static constexpr const std::string_view & drone_state_to_name(DroneState state) {
+	constexpr std::array<std::string_view, 7> types = {"onTheGround", "takingOff", "landing", "crashed", "exploring", "standBy", "returningToBase"};
+	return types.at(static_cast<std::size_t>(state));
 }
 
 } // namespace exploration

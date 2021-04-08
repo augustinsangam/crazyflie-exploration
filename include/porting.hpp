@@ -31,6 +31,8 @@ public:
 
 	float_t kalman_state_z();
 
+	bool kalman_crashed();
+
 	float_t stabilizer_yaw();
 
 	float_t get_battery_level(); // Between 0 and 1

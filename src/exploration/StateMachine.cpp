@@ -31,67 +31,66 @@ void StateMachine::init() {
 }
 
 void StateMachine::set_state(DroneState state) {
+	if (state == state_) {
+		return;
+	}
+
 	state_ = state;
-	porting_->debug_print("New state: %d\n", static_cast<int>(state) + 1);
+	porting_->debug_print("New state: %s\n", drone_state_to_name(state));
 }
 
 void StateMachine::step() {
 	// Handle transitions
+	auto desired_state = state_;
 
 	auto height = porting_->kalman_state_z();
 	auto batteryLevel = porting_->get_battery_level();
+	auto droneCrashed = state_ == DroneState::crashed || porting_->kalman_crashed();
+	auto obstacleOnTop = porting_->range_up() < 0.2F;
 
-	switch (state_) {
-	case DroneState::onTheGround:
-	case DroneState::crashed: {
-		// Nothing to do. Can't get out of this state
-		break;
+	if (droneCrashed) {
+		desired_state = DroneState::crashed;
+	} else if (obstacleOnTop) {
+		desired_state = DroneState::landing;
+	} else {
+		switch (state_) {
+		case DroneState::onTheGround:
+			break;
+		case DroneState::crashed:
+			// Nothing to do. Can't get out of this state
+			porting_->debug_print("Crashed!\n");
+			break;
+		case DroneState::takingOff:
+			if (batteryLevel < 0.3F) {
+				desired_state = DroneState::landing;
+			} else if (height > nominal_height) {
+				desired_state = DroneState::standBy;
+			}
+			break;
+		case DroneState::landing:
+			if (height < 0.1F) {
+				desired_state = DroneState::onTheGround;
+			}
+			break;
+		case DroneState::exploring: {
+			if (batteryLevel < 0.3F) {
+				desired_state = DroneState::landing;
+			} else if (batteryLevel < 0.6F) {
+				desired_state = DroneState::returningToBase;
+			}
+			break;
+		}
+		case DroneState::standBy:
+		case DroneState::returningToBase: {
+			if (batteryLevel < 0.3F) {
+				desired_state = DroneState::landing;
+			}
+			break;
+		}
+		}
 	}
-	case DroneState::takingOff:
-		if (batteryLevel < 0.3F) {
-			set_state(DroneState::landing);
-		} else if (height > nominal_height) {
-			set_state(DroneState::standBy);
-		}
-		break;
-	case DroneState::landing: {
-		if (height < 0.1F) {
-			set_state(DroneState::onTheGround);
-		}
-		break;
-	}
-	case DroneState::exploring: {
-		if (batteryLevel < 0.3F) {
-			set_state(DroneState::landing);
-		} else if (batteryLevel < 0.6F) {
-			set_state(DroneState::returningToBase);
-		}
-		bool droneCrashed = porting_->range_front() < 0.2F && height < 0.1F;
-		if (droneCrashed) {
-			// set_state(DroneState::crashed);
-		}
-		bool obstacleOnTop = porting_->range_up() < 0.2F;
-		if (obstacleOnTop) {
-			set_state(DroneState::landing);
-		}
-		break;
-	}
-	case DroneState::standBy:
-	case DroneState::returningToBase: {
-		if (batteryLevel < 0.3F) {
-			set_state(DroneState::landing);
-		}
-		auto droneCrashed = porting_->range_front() < 0.2F && height < 0.1F;
-		if (droneCrashed) {
-			// set_state(DroneState::crashed);
-		}
-		auto obstacleOnTop = porting_->range_up() < 0.2F;
-		if (obstacleOnTop) {
-			set_state(DroneState::landing);
-		}
-		break;
-	}
-	}
+
+	set_state(desired_state);
 
 	// Handle states
 	setpoint_t sp{};
