@@ -49,13 +49,7 @@ private:
 
 	void set_state(DroneState state);
 
-	void step_on_the_ground(setpoint_t *sp);
-	void step_taking_off(setpoint_t *sp);
-	void step_landing(setpoint_t *sp);
-	void step_crashed(setpoint_t *sp);
 	void step_exploring(setpoint_t *sp);
-	void step_standby(setpoint_t *sp);
-	void step_returning_to_base(setpoint_t *sp);
 
 	static constexpr float nominal_height = 0.3F;
 

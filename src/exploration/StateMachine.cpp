@@ -94,60 +94,37 @@ void StateMachine::step() {
 	}
 
 	// Handle states
-	setpoint_t setpoint_BG;
-	memset(&setpoint_BG, 0, sizeof setpoint_BG);
+	setpoint_t sp{};
 	switch (state_) {
 	case DroneState::onTheGround:
-		step_on_the_ground(&setpoint_BG);
+		SetPoint::shut_off_engines(&sp);
 		break;
 	case DroneState::takingOff:
-		step_taking_off(&setpoint_BG);
+		if (height < nominal_height) {
+			SetPoint::take_off(&sp, 0.5F);
+		}
 		break;
 	case DroneState::landing:
-		step_landing(&setpoint_BG);
+		if (height > 0.1F) {
+			SetPoint::land(&sp, 0.2F);
+		}
 		break;
 	case DroneState::crashed:
-		step_crashed(&setpoint_BG);
+		SetPoint::shut_off_engines(&sp);
 		break;
 	case DroneState::exploring:
 		keep_flying = true;
-		step_exploring(&setpoint_BG);
+		step_exploring(&sp);
 		break;
 	case DroneState::standBy:
-		step_standby(&setpoint_BG);
+		SetPoint::hover(&sp, 0.3F);
 		break;
 	case DroneState::returningToBase:
-		step_returning_to_base(&setpoint_BG);
+		// step_returning_to_base(&sp);
 		break;
 	}
-	porting_->commander_set_point(&setpoint_BG, STATE_MACHINE_COMMANDER_PRI);
-}
 
-void StateMachine::step_on_the_ground(setpoint_t *sp) { SetPoint::shut_off_engines(sp); }
-
-void StateMachine::step_taking_off(setpoint_t *sp) {
-	auto height = porting_->kalman_state_z();
-	if (height < nominal_height) {
-		SetPoint::take_off(sp, 0.5F);
-	}
-}
-
-void StateMachine::step_landing(setpoint_t *sp) {
-	auto height = porting_->kalman_state_z();
-	if (height > 0.1F) {
-		SetPoint::land(sp, 0.2F);
-	}
-}
-
-void StateMachine::step_crashed(setpoint_t *sp) {
-	// TODO ()
-	SetPoint::shut_off_engines(sp);
-}
-
-void StateMachine::step_standby(setpoint_t *sp) { SetPoint::hover(sp, 0.3F); }
-
-void StateMachine::step_returning_to_base(setpoint_t *sp) {
-	// TODO ()
+	porting_->commander_set_point(&sp, STATE_MACHINE_COMMANDER_PRI);
 }
 
 void StateMachine::step_exploring(setpoint_t *setpoint_BG) {
