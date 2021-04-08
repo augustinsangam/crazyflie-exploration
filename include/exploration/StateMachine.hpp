@@ -2,6 +2,7 @@
 #define EXPLORATION_STATEMACHINE_HPP
 
 #include "DroneState.hpp"
+#include "Explorer.hpp"
 #include "WallFollowing.hpp"
 #include "median_filter.hpp"
 #include "porting.hpp"
@@ -21,7 +22,8 @@ namespace exploration {
 
 class StateMachine {
 public:
-	explicit StateMachine(porting::DroneLayer *porting) : porting_(porting) {}
+	explicit StateMachine(porting::DroneLayer *porting)
+	    : state_{DroneState::onTheGround}, porting_{porting}, explorer_(porting) {}
 	[[nodiscard]] inline DroneState get_state() const { return state_; }
 
 	void init();
@@ -41,7 +43,9 @@ public:
 	void p2p_callback_handler(P2PPacket *p);
 
 private:
-	DroneState state_{DroneState::onTheGround};
+	DroneState state_;
+	porting::DroneLayer *porting_;
+	Explorer explorer_;
 
 	void set_state(DroneState state);
 
@@ -55,7 +59,6 @@ private:
 
 	static constexpr float nominal_height = 0.3F;
 
-	porting::DroneLayer *porting_;
 	uint8_t my_id;
 	struct MedianFilterFloat medFilt, medFilt_2, medFilt_3;
 	float rssi_angle;

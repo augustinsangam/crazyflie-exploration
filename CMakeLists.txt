@@ -22,6 +22,7 @@ target_compile_definitions(exploration PUBLIC
 	EXPLORATION_METHOD=${EXPLORATION_METHOD}
 	EXPLORATION_DRONE_INITIALISATION_DELAY=${EXPLORATION_DRONE_INITIALISATION_DELAY})
 target_sources(exploration PRIVATE
+	"./src/exploration/Explorer.cpp"
 	"./src/exploration/SGBA.cpp"
 	"./src/exploration/StateMachine.cpp"
 	"./src/exploration/WallFollowing.cpp"

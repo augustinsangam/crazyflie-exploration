@@ -1,5 +1,6 @@
 #include "exploration/StateMachine.hpp"
 #include "exploration/DroneState.hpp"
+#include "exploration/SetPoint.hpp"
 #include "math_supp.hpp"
 #include "porting.hpp"
 #include <algorithm>
@@ -10,66 +11,13 @@
 
 namespace exploration {
 
-static void _take_off(setpoint_t *sp, float velocity) {
-	sp->mode.x = modeVelocity;
-	sp->mode.y = modeVelocity;
-	sp->mode.z = modeVelocity;
-	sp->velocity.x = 0.0;
-	sp->velocity.y = 0.0;
-	sp->velocity.z = velocity;
-	sp->mode.yaw = modeVelocity;
-	sp->attitudeRate.yaw = 0.0;
-}
-
-static void _land(setpoint_t *sp, float velocity) {
-	sp->mode.x = modeVelocity;
-	sp->mode.y = modeVelocity;
-	sp->mode.z = modeVelocity;
-	sp->velocity.x = 0.0;
-	sp->velocity.y = 0.0;
-	sp->velocity.z = -velocity;
-	sp->mode.yaw = modeVelocity;
-	sp->attitudeRate.yaw = 0.0;
-}
-
-static void _hover(setpoint_t *sp, float height) {
-	sp->mode.x = modeVelocity;
-	sp->mode.y = modeVelocity;
-	sp->mode.z = modeAbs;
-	sp->velocity.x = 0.0;
-	sp->velocity.y = 0.0;
-	sp->position.z = height;
-	sp->mode.yaw = modeVelocity;
-	sp->attitudeRate.yaw = 0.0;
-}
-
-static void _vel_command(setpoint_t *sp, float vel_x, float vel_y,
-                         float yaw_rate, float height) {
-	sp->mode.x = modeVelocity;
-	sp->mode.y = modeVelocity;
-	sp->mode.z = modeAbs;
-	sp->velocity.x = vel_x;
-	sp->velocity.y = vel_y;
-	sp->position.z = height;
-	sp->mode.yaw = modeVelocity;
-	sp->attitudeRate.yaw = yaw_rate;
-	sp->velocity_body = true;
-}
-
-static void _shut_off_engines(setpoint_t *sp) {
-	sp->mode.x = modeDisable;
-	sp->mode.y = modeDisable;
-	sp->mode.z = modeDisable;
-	sp->mode.yaw = modeDisable;
-}
-
 void StateMachine::init() {
+	explorer_.init();
 	init_median_filter_f(&medFilt, 5);
 	init_median_filter_f(&medFilt_2, 5);
 	init_median_filter_f(&medFilt_3, 13);
 	auto address = porting_->config_block_radio_address();
 	my_id = static_cast<uint8_t>(address & 0x00000000FFU);
-	state_ = DroneState::onTheGround;
 
 #if EXPLORATION_METHOD != 1
 	p_reply.port = 0x00;                                           // NOLINT
@@ -120,7 +68,7 @@ void StateMachine::step() {
 		}
 		bool droneCrashed = porting_->range_front() < 0.2F && height < 0.1F;
 		if (droneCrashed) {
-			set_state(DroneState::crashed);
+			// set_state(DroneState::crashed);
 		}
 		bool obstacleOnTop = porting_->range_up() < 0.2F;
 		if (obstacleOnTop) {
@@ -133,11 +81,11 @@ void StateMachine::step() {
 		if (batteryLevel < 0.3F) {
 			set_state(DroneState::landing);
 		}
-		bool droneCrashed = porting_->range_front() < 0.2F && height < 0.1F;
+		auto droneCrashed = porting_->range_front() < 0.2F && height < 0.1F;
 		if (droneCrashed) {
-			set_state(DroneState::crashed);
+			// set_state(DroneState::crashed);
 		}
-		bool obstacleOnTop = porting_->range_up() < 0.2F;
+		auto obstacleOnTop = porting_->range_up() < 0.2F;
 		if (obstacleOnTop) {
 			set_state(DroneState::landing);
 		}
@@ -149,60 +97,54 @@ void StateMachine::step() {
 	setpoint_t setpoint_BG;
 	memset(&setpoint_BG, 0, sizeof setpoint_BG);
 	switch (state_) {
-	case DroneState::onTheGround: {
+	case DroneState::onTheGround:
 		step_on_the_ground(&setpoint_BG);
 		break;
-	}
-	case DroneState::takingOff: {
+	case DroneState::takingOff:
 		step_taking_off(&setpoint_BG);
 		break;
-	}
-	case DroneState::landing: {
+	case DroneState::landing:
 		step_landing(&setpoint_BG);
 		break;
-	}
-	case DroneState::crashed: {
+	case DroneState::crashed:
 		step_crashed(&setpoint_BG);
 		break;
-	}
-	case DroneState::exploring: {
+	case DroneState::exploring:
+		keep_flying = true;
 		step_exploring(&setpoint_BG);
 		break;
-	}
-	case DroneState::standBy: {
+	case DroneState::standBy:
 		step_standby(&setpoint_BG);
 		break;
-	}
-	case DroneState::returningToBase: {
+	case DroneState::returningToBase:
 		step_returning_to_base(&setpoint_BG);
 		break;
-	}
 	}
 	porting_->commander_set_point(&setpoint_BG, STATE_MACHINE_COMMANDER_PRI);
 }
 
-void StateMachine::step_on_the_ground(setpoint_t *sp) { _shut_off_engines(sp); }
+void StateMachine::step_on_the_ground(setpoint_t *sp) { SetPoint::shut_off_engines(sp); }
 
 void StateMachine::step_taking_off(setpoint_t *sp) {
 	auto height = porting_->kalman_state_z();
 	if (height < nominal_height) {
-		_take_off(sp, 0.5F);
+		SetPoint::take_off(sp, 0.5F);
 	}
 }
 
 void StateMachine::step_landing(setpoint_t *sp) {
 	auto height = porting_->kalman_state_z();
 	if (height > 0.1F) {
-		_land(sp, 0.2F);
+		SetPoint::land(sp, 0.2F);
 	}
 }
 
 void StateMachine::step_crashed(setpoint_t *sp) {
 	// TODO ()
-	_shut_off_engines(sp);
+	SetPoint::shut_off_engines(sp);
 }
 
-void StateMachine::step_standby(setpoint_t *sp) { _hover(sp, 0.3F); }
+void StateMachine::step_standby(setpoint_t *sp) { SetPoint::hover(sp, 0.3F); }
 
 void StateMachine::step_returning_to_base(setpoint_t *sp) {
 	// TODO ()
@@ -300,7 +242,7 @@ void StateMachine::step_exploring(setpoint_t *setpoint_BG) {
 			float vel_x_cmd;
 			float vel_y_cmd;
 
-			_hover(setpoint_BG, nominal_height);
+			SetPoint::hover(setpoint_BG, nominal_height);
 
 #if EXPLORATION_METHOD == 1
 			exploration_state = exploration_controller_.controller(
@@ -337,8 +279,8 @@ void StateMachine::step_exploring(setpoint_t *setpoint_BG) {
 			vel_y_cmd; float vel_y_cmd_convert = -sinf(-psi) * vel_x_cmd +
 			cosf(-psi) * vel_y_cmd;*/
 			// float vel_y_cmd_convert = -1 * vel_y_cmd;
-			_vel_command(setpoint_BG, vel_x_cmd, vel_y_cmd, vel_w_cmd_convert,
-			             nominal_height);
+			SetPoint::vel_command(setpoint_BG, vel_x_cmd, vel_y_cmd,
+			                      vel_w_cmd_convert, nominal_height);
 			// on_the_ground = false;
 		} else {
 			/*
@@ -349,7 +291,7 @@ void StateMachine::step_exploring(setpoint_t *setpoint_BG) {
 			if (porting::timestamp_us() >=
 			    takeoffdelaytime + 1000 * 1000 * my_id) {
 
-				_take_off(setpoint_BG, nominal_height);
+				SetPoint::take_off(setpoint_BG, nominal_height);
 				if (height > nominal_height) {
 					taken_off = true;
 
@@ -378,7 +320,7 @@ void StateMachine::step_exploring(setpoint_t *setpoint_BG) {
 				}
 				// on_the_ground = false;
 			} else {
-				_shut_off_engines(setpoint_BG);
+				SetPoint::shut_off_engines(setpoint_BG);
 				taken_off = false;
 			}
 		}
@@ -389,9 +331,9 @@ void StateMachine::step_exploring(setpoint_t *setpoint_BG) {
 			 *  but the crazyflie  has already taken off
 			 *   then land
 			 */
-			_land(setpoint_BG, 0.2F);
+			SetPoint::land(setpoint_BG, 0.2F);
 			if (height < 0.1F) {
-				_shut_off_engines(setpoint_BG);
+				SetPoint::shut_off_engines(setpoint_BG);
 				taken_off = false;
 			}
 			// on_the_ground = false;
@@ -403,7 +345,7 @@ void StateMachine::step_exploring(setpoint_t *setpoint_BG) {
 			 *  and crazyflie has landed
 			 *   then keep engines off
 			 */
-			_shut_off_engines(setpoint_BG);
+			SetPoint::shut_off_engines(setpoint_BG);
 			takeoffdelaytime = porting::timestamp_us();
 			// on_the_ground = true;
 		}
