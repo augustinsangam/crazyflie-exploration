@@ -18,7 +18,7 @@ enum class DroneState {
 };
 
 static constexpr const std::string_view & drone_state_to_name(DroneState state) {
-	constexpr std::array<std::string_view, 7> types = {"onTheGround", "takingOff", "landing", "crashed", "exploring", "standBy", "returningToBase"};
+	constexpr std::array<std::string_view, 7> types{"onTheGround", "takingOff", "landing", "crashed", "exploring", "standBy", "returningToBase"};
 	return types.at(static_cast<std::size_t>(state));
 }
 

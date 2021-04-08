@@ -68,9 +68,14 @@ void StateMachine::step() {
 
 	auto height = porting_->kalman_state_z();
 	auto batteryLevel = porting_->get_battery_level();
+
+	/* Stay in state crashed if we crashed earlier */
 	auto droneCrashed =
 	    next_state == DroneState::crashed || porting_->kalman_crashed();
-	auto obstacleOnTop = porting_->range_up() < 0.2F;
+
+	/* Detect above obstacles only when not on the ground*/
+	auto obstacleOnTop =
+	    next_state != DroneState::onTheGround && porting_->range_up() < 0.2F;
 
 	if (droneCrashed) {
 		next_state = DroneState::crashed;
