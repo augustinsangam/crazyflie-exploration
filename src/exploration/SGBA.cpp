@@ -112,11 +112,15 @@ static float fillHeadingArray(uint8_t *correct_heading_array,
 }
 
 void exploration::SGBA::init(float new_ref_distance_from_wall,
-                             float max_speed_ref, float begin_wanted_heading) {
+                             float max_speed_ref, float begin_wanted_heading,
+                             float origin_x, float origin_y) {
 	ref_distance_from_wall = new_ref_distance_from_wall;
 	max_speed = max_speed_ref;
 	wanted_angle = begin_wanted_heading;
 	first_run = true;
+
+	origin_x_ = origin_x;
+	origin_y_ = origin_y;
 }
 
 int exploration::SGBA::controller(float *vel_x, float *vel_y, float *vel_w,
@@ -310,7 +314,8 @@ int exploration::SGBA::controller(float *vel_x, float *vel_y, float *vel_w,
 				auto distance = std::sqrt(rel_x_sample * rel_x_sample +
 				                          rel_y_sample * rel_y_sample);
 				if (distance > 1.0F) {
-					rssi_sample_reset = true;
+					wanted_angle = wrap_to_pi(std::atan2(origin_y_ - current_pos_y, origin_x_ - current_pos_x));
+					/*rssi_sample_reset = true;
 					heading_rssi = current_heading;
 					int diff_rssi_unf = static_cast<int>(prev_rssi) -
 					                    static_cast<int>(rssi_beacon);
@@ -320,7 +325,7 @@ int exploration::SGBA::controller(float *vel_x, float *vel_y, float *vel_w,
 
 					// Estimate the angle to the beacon
 					wanted_angle = fillHeadingArray(correct_heading_array,
-					                                heading_rssi, diff_rssi, 5);
+					                                heading_rssi, diff_rssi, 5);*/
 				}
 			}
 
