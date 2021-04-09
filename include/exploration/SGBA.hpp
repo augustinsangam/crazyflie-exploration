@@ -4,12 +4,14 @@
 #include <cstdint>
 
 #include "WallFollowing.hpp"
+#include "porting.hpp"
 
 namespace exploration {
 
 class SGBA {
-
 public:
+	explicit SGBA(porting::DroneLayer *porting) : porting_{porting} {}
+
 	void init(float new_ref_distance_from_wall, float max_speed_ref,
 	          float begin_wanted_heading, float origin_x, float origin_y);
 	int controller(float *vel_x, float *vel_y, float *vel_w, float *rssi_angle,
@@ -20,6 +22,8 @@ public:
 	               float rssi_angle_inter, bool priority, bool outbound);
 
 private:
+	porting::DroneLayer *porting_;
+
 	WallFollowing wf_;
 	float state_start_time;
 	bool first_run = true;

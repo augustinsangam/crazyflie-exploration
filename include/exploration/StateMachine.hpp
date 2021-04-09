@@ -23,7 +23,13 @@ namespace exploration {
 class StateMachine {
 public:
 	explicit StateMachine(porting::DroneLayer *porting)
-	    : should_start_mission_{false}, state_{DroneState::onTheGround}, porting_{porting}, explorer_(porting) {}
+	    : should_start_mission_{false}, state_{DroneState::onTheGround},
+	      porting_{porting}, explorer_(porting), origin_ {}
+#if EXPLORATION_METHOD == 3
+	, exploration_controller_(porting)
+#endif
+	{
+	}
 	[[nodiscard]] inline DroneState get_state() const { return state_; }
 
 	void init();
@@ -47,10 +53,11 @@ private:
 	DroneState state_;
 	porting::DroneLayer *porting_;
 	Explorer explorer_;
+	point_t origin_;
 
 	void set_state(DroneState state);
 
-	void step_exploring(setpoint_t *sp);
+	void step_exploring(setpoint_t *sp, bool outbound);
 
 	static constexpr float nominal_height = 0.3F;
 
@@ -74,17 +81,12 @@ private:
 #endif
 
 #if EXPLORATION_METHOD == 1
-	bool outbound = true;
-#endif
-
-#if EXPLORATION_METHOD == 1
 	WallFollowing exploration_controller_;
 #elif EXPLORATION_METHOD == 2
 	WallFollowingWithAvoid exploration_controller_;
 #elif EXPLORATION_METHOD == 3
 	SGBA exploration_controller_;
 	int state_wf_;
-	static constexpr bool outbound_{true};
 #endif
 };
 

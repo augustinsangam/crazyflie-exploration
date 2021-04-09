@@ -27,7 +27,6 @@ void StateMachine::init() {
 #endif
 
 #if EXPLORATION_METHOD == 1 // wall following
-	// exploration_controller_.init(0.4F, 0.5F, 1);
 	exploration_controller_.init(0.4F, 0.5, 1);
 #elif EXPLORATION_METHOD == 2 // wallfollowing with avoid
 	if (my_id % 2 == 1) {
@@ -36,16 +35,17 @@ void StateMachine::init() {
 		exploration_controller_.init(0.4F, 0.5, 1);
 	}
 #elif EXPLORATION_METHOD == 3 // Swarm Gradient Bug Algorithm
+	porting_->kalman_estimated_pos(&origin_);
 	if (my_id == 4 || my_id == 8) {
-		exploration_controller_.init(0.4F, 0.5, -0.8F);
+		exploration_controller_.init(0.4F, 0.5, -0.8F, origin_.x, origin_.y);
 	} else if (my_id == 2 || my_id == 6) {
-		exploration_controller_.init(0.4F, 0.5, 0.8F);
+		exploration_controller_.init(0.4F, 0.5, 0.8F, origin_.x, origin_.y);
 	} else if (my_id == 3 || my_id == 7) {
-		exploration_controller_.init(0.4F, 0.5, -2.4F);
+		exploration_controller_.init(0.4F, 0.5, -2.4F, origin_.x, origin_.y);
 	} else if (my_id == 5 || my_id == 9) {
-		exploration_controller_.init(0.4F, 0.5, 2.4F);
+		exploration_controller_.init(0.4F, 0.5, 2.4F, origin_.x, origin_.y);
 	} else {
-		exploration_controller_.init(0.4F, 0.5, 0.8F);
+		exploration_controller_.init(0.4F, 0.5, 0.8F, origin_.x, origin_.y);
 	}
 #endif
 
@@ -77,9 +77,13 @@ void StateMachine::step() {
 	auto obstacleOnTop =
 	    next_state != DroneState::onTheGround && porting_->range_up() < 0.2F;
 
+	/* Battery too low -> Emergency stop */
+	auto batteryTooLow =
+	    next_state != DroneState::onTheGround && batteryLevel < 0.3F;
+
 	if (droneCrashed) {
 		next_state = DroneState::crashed;
-	} else if (obstacleOnTop) {
+	} else if (obstacleOnTop || batteryTooLow) {
 		next_state = DroneState::landing;
 	}
 
@@ -91,9 +95,7 @@ void StateMachine::step() {
 		porting_->debug_print("Crashed!\n");
 		break;
 	case DroneState::takingOff:
-		if (batteryLevel < 0.3F) {
-			next_state = DroneState::landing;
-		} else if (height > nominal_height) {
+		if (height > nominal_height) {
 			next_state = should_start_mission_ ? DroneState::exploring
 			                                   : DroneState::standBy;
 			should_start_mission_ = false;
@@ -105,15 +107,23 @@ void StateMachine::step() {
 		}
 		break;
 	case DroneState::exploring:
-		if (batteryLevel < 0.3F) {
-			next_state = DroneState::landing;
-		} else if (batteryLevel < 0.6F) {
+		/* Drone should stop exploring when battery below 60% to make sur o have
+		 * enough power to come back */
+		if (batteryLevel < 0.6F) {
 			next_state = DroneState::returningToBase;
 		}
 		break;
 	case DroneState::standBy:
+		break;
 	case DroneState::returningToBase: {
-		if (batteryLevel < 0.3F) {
+		// Landing if drone is enough close to starting point
+		point_t pos;
+		porting_->kalman_estimated_pos(&pos);
+		auto dx = pos.x - origin_.x;
+		auto dy = pos.y - origin_.y;
+		auto distance_squared = dx * dx + dy * dy;
+		constexpr auto distance = 0.5F;
+		if (distance_squared < distance * distance) {
 			next_state = DroneState::landing;
 		}
 		break;
@@ -138,20 +148,20 @@ void StateMachine::step() {
 		SetPoint::shut_off_engines(&sp);
 		break;
 	case DroneState::exploring:
-		step_exploring(&sp);
+		step_exploring(&sp, true);
 		break;
 	case DroneState::standBy:
 		SetPoint::hover(&sp, 0.3F);
 		break;
 	case DroneState::returningToBase:
-		// step_returning_to_base(&sp);
+		step_exploring(&sp, false);
 		break;
 	}
 
 	porting_->commander_set_point(&sp, STATE_MACHINE_COMMANDER_PRI);
 }
 
-void StateMachine::step_exploring(setpoint_t *setpoint_BG) {
+void StateMachine::step_exploring(setpoint_t *setpoint_BG, bool outbound) {
 	// For every 1 second, reset the RSSI value to high if it hasn't been
 	// received for a while
 	for (uint8_t it = 0; it < 9; it++) {
@@ -183,7 +193,7 @@ void StateMachine::step_exploring(setpoint_t *setpoint_BG) {
 	uint8_t flowdeck_isinit = porting_->deck_bc_flow2();
 
 	// get current height and heading
-	auto height = porting_->kalman_state_z();
+	// auto height = porting_->kalman_state_z();
 	float heading_deg = porting_->stabilizer_yaw();
 	auto heading_rad = deg_to_rad(heading_deg);
 
@@ -220,7 +230,7 @@ void StateMachine::step_exploring(setpoint_t *setpoint_BG) {
 	uint8_t rssi_beacon_threshold = 41;
 	if (keep_flying &&
 	    (!correctly_initialized || up_range < 0.2F ||
-	     (!outbound_ && rssi_beacon_filtered < rssi_beacon_threshold))) {
+	     (!outbound && rssi_beacon_filtered < rssi_beacon_threshold))) {
 		keep_flying = false;
 	}
 /*#else
@@ -262,7 +272,7 @@ void StateMachine::step_exploring(setpoint_t *setpoint_BG) {
 	    &vel_x_cmd, &vel_y_cmd, &vel_w_cmd, &rssi_angle, &state_wf_,
 	    front_range, left_range, right_range, back_range, heading_rad, pos.x,
 	    pos.y, rssi_beacon_filtered, rssi_inter_filtered,
-	    rssi_angle_inter_closest, priority, outbound_);
+	    rssi_angle_inter_closest, priority, outbound);
 
 	std::memcpy(&p_reply.data[1], &rssi_angle, // NOLINT
 	            sizeof rssi_angle);

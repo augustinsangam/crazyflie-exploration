@@ -1,6 +1,7 @@
 #include "exploration/SGBA.hpp"
 #include "math_supp.hpp"
 #include "porting.hpp"
+#include <cstdio>
 
 static int transition(int new_state, float *state_start_time) {
 	*state_start_time =
@@ -170,8 +171,7 @@ int exploration::SGBA::controller(float *vel_x, float *vel_y, float *vel_w,
 		first_run = false;
 	}
 
-	if (first_time_inbound) {
-		wrap_to_pi(wanted_angle - pi<float>);
+	if (first_time_inbound && !outbound) {
 		wanted_angle_dir = wrap_to_pi(current_heading - wanted_angle);
 		state = transition(2, &state_start_time);
 		first_time_inbound = false;
@@ -234,7 +234,6 @@ int exploration::SGBA::controller(float *vel_x, float *vel_y, float *vel_w,
 			state = transition(1, &state_start_time); // forward
 		}
 	} else if (state == 3) { // WALL_FOLLOWING
-
 		// if another drone is close and there is no right of way, move out of
 		// the way
 		if (priority == false && rssi_inter < rssi_threshold) {
@@ -297,7 +296,6 @@ int exploration::SGBA::controller(float *vel_x, float *vel_y, float *vel_w,
 		//    determine by the gradient of the crazyradio what the approx
 		//    direction is.
 		if (state_wf == 5) {
-
 			if (!outbound) {
 				// Reset sample gathering
 				if (rssi_sample_reset) {
@@ -314,7 +312,9 @@ int exploration::SGBA::controller(float *vel_x, float *vel_y, float *vel_w,
 				auto distance = std::sqrt(rel_x_sample * rel_x_sample +
 				                          rel_y_sample * rel_y_sample);
 				if (distance > 1.0F) {
-					wanted_angle = wrap_to_pi(std::atan2(origin_y_ - current_pos_y, origin_x_ - current_pos_x));
+					porting_->debug_print("CALCULATING NEW ANGLE\n");
+					wanted_angle = wrap_to_pi(std::atan2(
+					    origin_y_ - current_pos_y, origin_x_ - current_pos_x));
 					/*rssi_sample_reset = true;
 					heading_rssi = current_heading;
 					int diff_rssi_unf = static_cast<int>(prev_rssi) -
@@ -325,7 +325,8 @@ int exploration::SGBA::controller(float *vel_x, float *vel_y, float *vel_w,
 
 					// Estimate the angle to the beacon
 					wanted_angle = fillHeadingArray(correct_heading_array,
-					                                heading_rssi, diff_rssi, 5);*/
+					                                heading_rssi, diff_rssi,
+					5);*/
 				}
 			}
 
