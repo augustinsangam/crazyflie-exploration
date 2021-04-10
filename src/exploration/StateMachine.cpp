@@ -37,15 +37,15 @@ void StateMachine::init() {
 #elif EXPLORATION_METHOD == 3 // Swarm Gradient Bug Algorithm
 	porting_->kalman_estimated_pos(&origin_);
 	if (my_id == 4 || my_id == 8) {
-		exploration_controller_.init(0.4F, 0.5, -0.8F, origin_.x, origin_.y);
+		exploration_controller_.init(0.35F, 0.5, -0.8F, origin_.x, origin_.y);
 	} else if (my_id == 2 || my_id == 6) {
-		exploration_controller_.init(0.4F, 0.5, 0.8F, origin_.x, origin_.y);
+		exploration_controller_.init(0.35F, 0.5, 0.8F, origin_.x, origin_.y);
 	} else if (my_id == 3 || my_id == 7) {
-		exploration_controller_.init(0.4F, 0.5, -2.4F, origin_.x, origin_.y);
+		exploration_controller_.init(0.35F, 0.5, -2.4F, origin_.x, origin_.y);
 	} else if (my_id == 5 || my_id == 9) {
-		exploration_controller_.init(0.4F, 0.5, 2.4F, origin_.x, origin_.y);
+		exploration_controller_.init(0.35F, 0.5, 2.4F, origin_.x, origin_.y);
 	} else {
-		exploration_controller_.init(0.4F, 0.5, 0.8F, origin_.x, origin_.y);
+		exploration_controller_.init(0.35F, 0.5, 0.8F, origin_.x, origin_.y);
 	}
 #endif
 
@@ -73,6 +73,10 @@ void StateMachine::step() {
 	auto droneCrashed =
 	    next_state == DroneState::crashed || porting_->kalman_crashed();
 
+	// checking init of multiranger and flowdeck
+	auto sensors_work =
+	    porting_->deck_bc_multiranger() != 0 && porting_->deck_bc_flow2() != 0;
+
 	/* Detect above obstacles only when not on the ground*/
 	auto obstacleOnTop =
 	    next_state != DroneState::onTheGround && porting_->range_up() < 0.2F;
@@ -81,7 +85,7 @@ void StateMachine::step() {
 	auto batteryTooLow =
 	    next_state != DroneState::onTheGround && batteryLevel < 0.3F;
 
-	if (droneCrashed) {
+	if (droneCrashed || !sensors_work) {
 		next_state = DroneState::crashed;
 	} else if (obstacleOnTop || batteryTooLow) {
 		next_state = DroneState::landing;
@@ -188,29 +192,17 @@ void StateMachine::step_exploring(setpoint_t *setpoint_BG, bool outbound) {
 	auto rssi_inter_filtered = static_cast<uint8_t>(update_median_filter_f(
 	    &medFilt_2, static_cast<float>(rssi_inter_closest)));
 
-	// checking init of multiranger and flowdeck
-	uint8_t multiranger_isinit = porting_->deck_bc_multiranger();
-	uint8_t flowdeck_isinit = porting_->deck_bc_flow2();
-
 	// get current height and heading
 	// auto height = porting_->kalman_state_z();
 	float heading_deg = porting_->stabilizer_yaw();
 	auto heading_rad = deg_to_rad(heading_deg);
 
-#if EXPLORATION_METHOD == 3
-	rssi_beacon = porting_->radio_rssi();
-	auto rssi_beacon_filtered = static_cast<uint8_t>(
-	    update_median_filter_f(&medFilt_3, static_cast<float>(rssi_beacon)));
-#endif
-
 	// Select which laser range sensor readings to use
-	if (multiranger_isinit != 0) {
-		front_range = porting_->range_front();
-		right_range = porting_->range_right();
-		left_range = porting_->range_left();
-		back_range = porting_->range_back();
-		up_range = porting_->range_up();
-	}
+	front_range = porting_->range_front();
+	right_range = porting_->range_right();
+	left_range = porting_->range_left();
+	back_range = porting_->range_back();
+	up_range = porting_->range_up();
 
 	// Get position estimate of kalman filter
 	point_t pos;
@@ -221,26 +213,6 @@ void StateMachine::step_exploring(setpoint_t *setpoint_BG, bool outbound) {
 	if (up_range_filtered < 0.05F) {
 		up_range_filtered = up_range;
 	}
-
-	if (flowdeck_isinit != 0 && multiranger_isinit != 0) {
-		correctly_initialized = true;
-	}
-
-#if EXPLORATION_METHOD == 3
-	uint8_t rssi_beacon_threshold = 41;
-	if (keep_flying &&
-	    (!correctly_initialized || up_range < 0.2F ||
-	     (!outbound && rssi_beacon_filtered < rssi_beacon_threshold))) {
-		keep_flying = false;
-	}
-/*#else
-	if (keep_flying && (!correctly_initialized || up_range < 0.2F)) {
-	    keep_flying = false;
-	}
-*/
-#endif
-
-	exploration_state = 0;
 
 	/*
 	 * If the flight is given a OK
@@ -254,25 +226,24 @@ void StateMachine::step_exploring(setpoint_t *setpoint_BG, bool outbound) {
 	SetPoint::hover(setpoint_BG, nominal_height);
 
 #if EXPLORATION_METHOD == 1
-	exploration_state = exploration_controller_.controller(
-	    &vel_x_cmd, &vel_y_cmd, &vel_w_cmd, front_range, right_range,
-	    heading_rad, 1);
+	exploration_controller_.controller(&vel_x_cmd, &vel_y_cmd, &vel_w_cmd,
+	                                   front_range, right_range, heading_rad,
+	                                   1);
 #elif EXPLORATION_METHOD == 2
 	if (id_inter_closest > my_id) {
 		rssi_inter_filtered = 140;
 	}
 
-	exploration_state = exploration_controller_.controller(
-	    &vel_x_cmd, &vel_y_cmd, &vel_w_cmd, front_range, left_range,
-	    right_range, heading_rad, rssi_inter_filtered);
+	exploration_controller_.controller(&vel_x_cmd, &vel_y_cmd, &vel_w_cmd,
+	                                   front_range, left_range, right_range,
+	                                   heading_rad, rssi_inter_filtered);
 #elif EXPLORATION_METHOD == 3
 	bool priority = false;
 	priority = id_inter_closest > my_id;
-	exploration_state = exploration_controller_.controller(
-	    &vel_x_cmd, &vel_y_cmd, &vel_w_cmd, &rssi_angle, &state_wf_,
-	    front_range, left_range, right_range, back_range, heading_rad, pos.x,
-	    pos.y, rssi_beacon_filtered, rssi_inter_filtered,
-	    rssi_angle_inter_closest, priority, outbound);
+	exploration_controller_.controller(
+	    &vel_x_cmd, &vel_y_cmd, &vel_w_cmd, &rssi_angle, front_range,
+	    left_range, right_range, back_range, heading_rad, pos.x, pos.y,
+	    rssi_inter_filtered, rssi_angle_inter_closest, priority, outbound);
 
 	std::memcpy(&p_reply.data[1], &rssi_angle, // NOLINT
 	            sizeof rssi_angle);
@@ -318,18 +289,14 @@ void StateMachine::return_to_base() { state_ = DroneState::returningToBase; }
 void StateMachine::p2p_callback_handler(P2PPacket *p) {
 	auto id_inter_ext = p->data[0]; // NOLINT
 
-	if (id_inter_ext == 0x64) {
-		rssi_beacon = p->rssi;
-	} else {
-		auto rssi_inter = p->rssi;
-		float rssi_angle_inter_ext;
-		std::memcpy(&rssi_angle_inter_ext, &p->data[1], // NOLINT
-		            sizeof p->data[1]);                 // NOLINT
+	auto rssi_inter = p->rssi;
+	float rssi_angle_inter_ext;
+	std::memcpy(&rssi_angle_inter_ext, &p->data[1], // NOLINT
+	            sizeof p->data[1]);                 // NOLINT
 
-		rssi_array_other_drones.at(id_inter_ext) = rssi_inter;
-		time_array_other_drones.at(id_inter_ext) = porting::timestamp_us();
-		rssi_angle_array_other_drones.at(id_inter_ext) = rssi_angle_inter_ext;
-	}
+	rssi_array_other_drones.at(id_inter_ext) = rssi_inter;
+	time_array_other_drones.at(id_inter_ext) = porting::timestamp_us();
+	rssi_angle_array_other_drones.at(id_inter_ext) = rssi_angle_inter_ext;
 }
 
 } // namespace exploration

@@ -65,14 +65,11 @@ private:
 	struct MedianFilterFloat medFilt, medFilt_2, medFilt_3;
 	float rssi_angle;
 	float front_range, right_range, left_range, back_range, up_range;
-	uint8_t rssi_beacon;
 	uint64_t takeoffdelaytime = 0;
 	std::array<std::uint64_t, 9> time_array_other_drones{0};
 	std::array<std::uint8_t, 9> rssi_array_other_drones{150, 150, 150, 150, 150,
 	                                                    150, 150, 150, 150};
 	std::array<float, 9> rssi_angle_array_other_drones{500.0F};
-	bool correctly_initialized = false;
-	bool keep_flying = false, taken_off = false;
 	int exploration_state = 0;
 
 #if EXPLORATION_METHOD != 1

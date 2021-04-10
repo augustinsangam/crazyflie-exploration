@@ -20,98 +20,6 @@ static bool logicIsCloseTo(float real_value, float checked_value,
 // Command functions
 static void commandTurn(float *vel_w, float max_rate) { *vel_w = max_rate; }
 
-uint8_t maxValue(uint8_t myArray[], int size) {
-	/* enforce the contract */
-	// assert(myArray && size);
-	int i;
-	uint8_t maxValue = myArray[0];
-
-	for (i = 1; i < size; ++i) {
-		if (myArray[i] > maxValue) {
-			maxValue = myArray[i];
-		}
-	}
-	return maxValue;
-}
-
-static float fillHeadingArray(uint8_t *correct_heading_array,
-                              float rssi_heading, int diff_rssi,
-                              int max_meters) {
-
-	// Heading array of action choices
-	static float heading_array[8] = {-135.0F, -90.0F, -45.0F, 0.0F,
-	                                 45.0F,   90.0F,  135.0F, 180.0F};
-	float rssi_heading_deg = rad_to_deg(rssi_heading);
-
-	for (int it = 0; it < 8; it++) {
-
-		// Fill array based on heading and rssi heading
-		if ((rssi_heading_deg >= heading_array[it] - 22.5F &&
-		     rssi_heading_deg < heading_array[it] + 22.5F && it != 7) ||
-		    (it == 7 && (rssi_heading_deg >= heading_array[it] - 22.5F ||
-		                 rssi_heading_deg < -135.0F - 22.5F))) {
-			uint8_t temp_value_forward = correct_heading_array[it];
-			uint8_t temp_value_backward = correct_heading_array[(it + 4) % 8];
-
-			// if gradient is good, increment the array corresponding to the
-			// current heading and decrement the exact opposite
-			if (diff_rssi > 0) {
-				correct_heading_array[it] =
-				    temp_value_forward + 1; //(uint8_t)abs(diff_rssi);
-				if (temp_value_backward > 0) {
-					correct_heading_array[(it + 4) % 8] =
-					    temp_value_backward - 1; //(uint8_t)abs(diff_rssi);
-				}
-				// if gradient is bad, decrement the array corresponding to the
-				// current heading and increment the exact opposite
-
-			} else if (diff_rssi < 0) {
-				if (temp_value_forward > 0) {
-					correct_heading_array[it] =
-					    temp_value_forward - 1; //(uint8_t)abs(diff_rssi);
-				}
-				correct_heading_array[(it + 4) % 8] =
-				    temp_value_backward + 1; //(uint8_t)abs(diff_rssi);
-			}
-		}
-	}
-
-	// degrading function
-	//    If one of the arrays goes over maximum amount of points (meters), then
-	//    decrement all values
-	if (maxValue(correct_heading_array, 8) > max_meters) {
-		for (int it = 0; it < 8; it++) {
-			if (correct_heading_array[it] > 0) {
-				correct_heading_array[it] = correct_heading_array[it] - 1;
-			}
-		}
-	}
-
-	// Calculate heading where the beacon might be
-	int count = 0;
-	float y_part = 0, x_part = 0;
-
-	for (int it = 0; it < 8; it++) {
-		if (correct_heading_array[it] > 0) {
-			auto angle = deg_to_rad(heading_array[it]);
-			x_part +=
-			    static_cast<float>(correct_heading_array[it]) * std::cos(angle);
-			y_part +=
-			    static_cast<float>(correct_heading_array[it]) * std::sin(angle);
-
-			// sum += heading_array[it];
-			count = count + correct_heading_array[it];
-		}
-	}
-	float wanted_angle_return = 0;
-	if (count != 0) {
-		wanted_angle_return = std::atan2(y_part / static_cast<float>(count),
-		                                 x_part / static_cast<float>(count));
-	}
-
-	return wanted_angle_return;
-}
-
 void exploration::SGBA::init(float new_ref_distance_from_wall,
                              float max_speed_ref, float begin_wanted_heading,
                              float origin_x, float origin_y) {
@@ -124,12 +32,11 @@ void exploration::SGBA::init(float new_ref_distance_from_wall,
 	origin_y_ = origin_y;
 }
 
-int exploration::SGBA::controller(float *vel_x, float *vel_y, float *vel_w,
-                                  float *rssi_angle, int *state_wallfollowing,
-                                  float front_range, float left_range,
-                                  float right_range, float back_range,
-                                  float current_heading, float current_pos_x,
-                                  float current_pos_y, uint8_t rssi_beacon,
+void exploration::SGBA::controller(float *vel_x, float *vel_y, float *vel_w,
+                                  float *rssi_angle, float front_range,
+                                  float left_range, float right_range,
+                                  float back_range, float current_heading,
+                                  float current_pos_x, float current_pos_y,
                                   uint8_t rssi_inter, float rssi_angle_inter,
                                   bool priority, bool outbound) {
 
@@ -150,7 +57,6 @@ int exploration::SGBA::controller(float *vel_x, float *vel_y, float *vel_w,
 	static uint8_t prev_rssi = 150;
 	static int diff_rssi = 0;
 	static bool rssi_sample_reset = false;
-	static float heading_rssi = 0;
 	static uint8_t correct_heading_array[8] = {0};
 
 	static bool first_time_inbound = true;
@@ -270,9 +176,7 @@ int exploration::SGBA::controller(float *vel_x, float *vel_y, float *vel_w,
 
 		// Check if bug went into a looping while wall following,
 		//    if so, then forse the reverse direction predical.
-		float rel_x_loop =
-		    current_pos_x -
-		    pos_x_hit; //  diff_rssi = (int)prev_rssi - (int)rssi_beacon;
+		float rel_x_loop = current_pos_x - pos_x_hit;
 		float rel_y_loop = current_pos_y - pos_y_hit;
 		float loop_angle = wrap_to_pi(std::atan2(rel_y_loop, rel_x_loop));
 
@@ -299,10 +203,9 @@ int exploration::SGBA::controller(float *vel_x, float *vel_y, float *vel_w,
 			if (!outbound) {
 				// Reset sample gathering
 				if (rssi_sample_reset) {
+					rssi_sample_reset = false;
 					pos_x_sample = current_pos_x;
 					pos_y_sample = current_pos_y;
-					rssi_sample_reset = false;
-					prev_rssi = rssi_beacon;
 				}
 
 				// if the crazyflie traveled for 1 meter, than measure if it
@@ -315,28 +218,14 @@ int exploration::SGBA::controller(float *vel_x, float *vel_y, float *vel_w,
 					porting_->debug_print("CALCULATING NEW ANGLE\n");
 					wanted_angle = wrap_to_pi(std::atan2(
 					    origin_y_ - current_pos_y, origin_x_ - current_pos_x));
-					/*rssi_sample_reset = true;
-					heading_rssi = current_heading;
-					int diff_rssi_unf = static_cast<int>(prev_rssi) -
-					                    static_cast<int>(rssi_beacon);
-
-					// rssi already gets filtered at the radio_link.c
-					diff_rssi = diff_rssi_unf;
-
-					// Estimate the angle to the beacon
-					wanted_angle = fillHeadingArray(correct_heading_array,
-					                                heading_rssi, diff_rssi,
-					5);*/
 				}
 			}
-
 		} else {
 			rssi_sample_reset = true;
 		}
 	} else if (state == 4) { // MOVE_OUT_OF_WAY
 		// once the drone has gone by, rotate to goal
 		if (rssi_inter >= rssi_collision_threshold) {
-
 			state = transition(2, &state_start_time); // rotate_to_goal
 		}
 	}
@@ -398,11 +287,8 @@ int exploration::SGBA::controller(float *vel_x, float *vel_y, float *vel_w,
 	}
 
 	*rssi_angle = wanted_angle;
-	*state_wallfollowing = state_wf;
 
 	*vel_x = temp_vel_x;
 	*vel_y = temp_vel_y;
 	*vel_w = temp_vel_w;
-
-	return state;
 }
