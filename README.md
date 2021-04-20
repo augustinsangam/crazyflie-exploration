@@ -21,4 +21,8 @@ add_directory("./exploration")
 
 The above example will use the first exploration method with a starting delay of 3s.
 
+- The first method will simply follow walls.
+- The second follows wall and avoid (hopefully?) other drones. 
+- The third use the full SGBA, including the “return to base” functionnality.
+
 You can either choose to copy the content to your repo or use it as a submodule.
