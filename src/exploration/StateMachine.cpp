@@ -292,7 +292,7 @@ void StateMachine::p2p_callback_handler(P2PPacket *p) {
 	auto rssi_inter = p->rssi;
 	float rssi_angle_inter_ext;
 	std::memcpy(&rssi_angle_inter_ext, &p->data[1], // NOLINT
-	            sizeof p->data[1]);                 // NOLINT
+	            sizeof rssi_angle_inter_ext);       // NOLINT
 
 	rssi_array_other_drones.at(id_inter_ext) = rssi_inter;
 	time_array_other_drones.at(id_inter_ext) = porting::timestamp_us();
